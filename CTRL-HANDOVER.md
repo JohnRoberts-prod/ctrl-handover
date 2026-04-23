@@ -1,246 +1,145 @@
-﻿# CTRL Project Handover
-*Last updated: 23 April 2026*
-*Session ended: discussing swapping @imgly/background-removal for Remove.bg API*
+# CTRL Project Handover
+*Last updated: 2026-04-23 UTC*
+*Session ended: John typed /afk — no active build task in progress this session*
 
 ---
 
 ## HOW TO USE THIS DOCUMENT
 
-You are Claude (web or Code) picking up a CTRL development session.
+You are Claude web browser picking up a CTRL development session.
 John Roberts is the developer. Read this entire document before responding.
+When John returns, he will paste in any files or context from the web session.
 
-The CTRL codebase is at: `D:\AI Work\Control-Centre\`
-Backend: Node.js + Express + TypeScript — port 3001
-Frontend: React 18 + Vite + TypeScript — port 5173
-Terminal server: node-pty WebSocket — port 3002
-Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db`
+The CTRL codebase is at: Backend: Node.js + Express + TypeScript on port 3001
+Frontend: React 18 + Vite + TypeScript on port 5173
+Terminal server: node-pty WebSocket server on port 3002
+Database: SQLite (better-sqlite3) at 
+---
+
+## WHAT WE WERE BUILDING THIS SESSION
+
+No active build task was in progress this session. John typed /afk immediately, so this handover is based entirely on STATUS.md and project memory. The current build priority per STATUS.md is Email Intelligence UI (Tasks 2h-2l). All email intelligence backend is complete. The next Claude Code session should start by reading skill-email-intelligence.md and picking up from Task 2h.
+
+---
+
+## CURRENT BUILD STATE
+
+### Recently completed (prior sessions)
+- Full email intelligence backend: SQLite migration 5, Gmail Pub/Sub webhook, rules engine (7 priorities), keyword groups, contact tagging, importance scoring, thread state, List-Unsubscribe parsing, 60-minute background sync
+- Trading tab: Alpaca connected, 6-tab layout (Overview, Trade Log, Research, Weekly, Strategies, Routines), paper/live toggle, vault-backed credentials in Settings, SQLite migrations 1-16
+- App shell, sidebar, topbar, Claude panel
+- VaultGate UI (create and unlock vault)
+- Google OAuth — real Gmail loading
+- Gmail tab — real data displaying
+- Claude tab — xterm.js WebSocket terminal
+- Auth protection on all routes
+
+### In progress right now
+Nothing was in progress at /afk time. Clean stopping point.
+
+### Pending / next steps
+1. Email Intelligence UI — Tasks 2h-2l (DO FIRST — read skill-email-intelligence.md)
+2. Notes tab — skill-notes.md designed 23 Apr, ClickUp Docs v3 API
+3. GitHub integration service — skill-github.md needs designing before building
+4. Settings tab completion — trading/perplexity/clickup sections
+5. ClickUp integration — workspace auto-setup
+6. Perplexity service — backend proxy
+7. Push CTRL to GitHub (critical pending computer task)
+
+---
+
+## ALL MODULES — STATUS
+
+| Module | Location | Status | Notes |
+|--------|----------|--------|-------|
+| App Shell / Sidebar | src/frontend/src/ | Working | Dark canvas, collapsible 200px/62px |
+| VaultGate | src/frontend/src/modules/ | Working | Create and unlock vault |
+| Google OAuth | src/backend/ | Working | Real Gmail loading |
+| Gmail Tab | src/frontend/src/modules/gmail/ | Working | Real data, intelligence backend complete |
+| Email Intelligence Backend | src/backend/ | Complete | Tasks 2a-2g done, UI 2h-2l pending |
+| Claude Tab | src/frontend/src/modules/claude-tab/ | Working | xterm.js WebSocket terminal |
+| Home Tab | src/frontend/src/modules/home/ | Basic | Needs redesign — skill-home.md not yet written |
+| Finance Tab | src/frontend/src/modules/finance/ | Basic | Needs redesign — skill-finance-dashboard.md |
+| Trading Tab | src/frontend/src/modules/trading/ | Working | 6 tabs, Alpaca paper+live, strategies |
+| GitHub Tab | src/frontend/src/modules/github/ | Stub | skill-github.md needs designing first |
+| Notes Tab | — | Not built | skill-notes.md designed 23 Apr, ready to build |
+| CRM Tab | — | Not built | skill-crm.md not written |
+| Knowledge Base | — | Not built | skill-knowledge-base.md not written |
+| Brand Toolkit | — | Not built | skill-brand-toolkit.md not written |
+| Settings | src/frontend/src/modules/settings/ | Partial | Trading section done, others missing |
+| Admin Tab | — | Not built | skill-admin.md not written |
+
+---
+
+## FILES CREATED OR MODIFIED THIS SESSION
+
+None — /afk was called immediately with no build work this session.
+
+---
+
+## RECENT GIT COMMITS
+
+No git history available — CTRL has not yet been pushed to GitHub.
+Pushing CTRL to GitHub is listed as a critical pending computer task in STATUS.md.
+
+---
+
+## OPEN ISSUES / KNOWN BUGS
+
+- PowerShell truncates long pasted commands — save as .ps1 and run instead
+- Port 3001 EADDRINUSE on restart — kill with: netstat -ano | findstr :3001, then taskkill /PID [pid] /F
+- Gmail watch expires every 7 days — auto-renewal not yet built
+- CTRL not yet on GitHub — this is a critical pending task
+
+---
+
+## KEY DECISIONS MADE THIS SESSION
+
+No decisions made this session. Refer to CLAUDE.md for all standing decisions:
+- CTRL is a local web app (not desktop)
+- Google OAuth for login — no username/password
+- AES-256-GCM vault for all secrets
+- Config blob at D:AI Work.ctrl-config.json
+- File system sandboxed to D:AI Work only
+- SQLite first — never query Gmail API directly from display routes
+- Claude API only called when user explicitly asks (zero background token use)
+- Staging: one click. Live: explicit confirmation required
+
+---
+
+## BACKEND API ENDPOINTS ADDED THIS SESSION
+
+None this session.
+
+---
+
+## DATABASE CHANGES THIS SESSION
+
+None this session. Current schema is through migration 16 (trading tables).
+
+---
+
+## IMPORTANT CONTEXT FOR NEXT SESSION
+
+1. READ skill-email-intelligence.md FIRST — this is the next build task (2h-2l)
+2. Notes tab skill file is designed and ready — skill-notes.md exists and is ready to build after email UI
+3. GitHub tab CANNOT be built yet — skill-github.md must be designed in Claude.ai first
+4. CTRL is not on GitHub yet — before any destructive local changes, manually push first
+5. Gmail Pub/Sub webhook needs a Cloudflare Tunnel URL — public webhook not yet configured
+6. Alpaca paper account may not be signed up yet — check before testing trading features
+7. The email tagging system is a core behavior: tag every email touched, learn tags continuously
 
 ---
 
 ## HOW TO START THE SYSTEM
 
-```
-D:\AI Work\START-ALL.bat
-```
-
+\
 Or manually:
-- Backend:  `cd D:\AI Work\Control-Centre && npm run dev:backend`
-- Frontend: `cd D:\AI Work\Control-Centre && npm run dev:frontend`
-- Terminal: `cd D:\AI Work\Control-Centre\src\terminal-server && npm run dev`
-
+- Backend: - Frontend: - Terminal server: 
 ---
 
-## COMPLETE FEATURE LIST — ALL BUILT FUNCTIONALITY
+## PROJECTS OUTSIDE CTRL (for full context)
 
-### INFRASTRUCTURE
-- AES-256-GCM encrypted vault — create, unlock, lock, CRUD keys via UI
-- VaultGate — blocks app until vault unlocked
-- Google OAuth — real Gmail auth, token stored in vault
-- App shell — sidebar (collapsible, grouped), topbar, Claude slide-in panel
-- Auth protection on all routes
-- SQLite database with 16+ migrations
-- Config blob at `D:\AI Work\.ctrl-config.json` — projects, preferences
-- Sandboxed file API (read/write/list/delete, locked to D:\AI Work\)
-- Git routes — status, commit, push staging, push live
-
-### GMAIL MODULE (`/gmail`)
-- Full inbox with real Gmail data (synced to SQLite, never direct API from display)
-- Folder tree — labels, virtual folders (Unread, Starred, Sent, etc.)
-- Project filtering bar — filter inbox by configured projects
-- Email list with importance scoring, tags, read/unread state
-- Thread reader — full conversation view
-- Inbox Health Bar — stats (unread, starred, tag coverage)
-- Review Mode — triage panel for inbox cleanup
-- Bulk archive / bulk trash
-- Tag system — per-message tags with bulk operations
-- Unsubscribe — list-unsubscribe parsing, one-click domain unsubscribe
-- Email intelligence backend — rules engine (7 priorities), keyword groups, contact tagging, importance scoring, Pub/Sub webhook, 60-minute background sync
-
-### TASKS MODULE (`/tasks`)
-- Google Tasks integration
-- Task lists sidebar
-- Task board per list — create, complete, delete tasks
-
-### TRADING MODULE (`/trading`)
-- **Overview tab** — portfolio header (equity, P&L, cash), positions table, open orders, manual override panel, market status indicator
-- **Trade Log tab** — filled order history from Alpaca
-- **Research tab** — saved research notes with tags
-- **Weekly Review tab** — stub (GitHub-backed, in design)
-- **Strategies tab** — strategy cards with paper/live toggle, gate enforcement (paper-only guard)
-- **Routines tab** — built-in briefing triggers (Morning Briefing, Midday Check run-now buttons), user-created routines with Perplexity questions editor (add/remove/edit queries per routine)
-- **Bot tab** — stub
-- Paper/live mode toggle with confirmation gate
-- Alpaca API wrapper — paper + live endpoints
-- Trading scheduler — cron jobs (morning briefing 13:15 UTC, midday 17:30 UTC, order sync every 30 min)
-- Trading briefing service — market data, bar charts, Perplexity integration
-
-### FINANCE MODULE (`/finance`)
-- Double-entry bookkeeping (immutable postings, all amounts in pence)
-- Multiple accounts — create, edit, delete, balance anchors
-- Transaction import — CSV upload with configurable column mapping per account
-- Transaction list — filter by account, date range, category; paginated
-- Auto-categorisation rules — pattern matching, bulk apply
-- Reimbursements tracker — claim, resolve, link to transactions
-- Contracts/Agreements — recurring commitments with start/end dates
-- Overview tab — balance summary, recent transactions, spending breakdown
-- CSV format library — save and reuse import configurations
-
-### CLOUDFLARE MODULE (`/cloudflare`)
-- Domains — list all zones, zone detail
-- DNS Records — view, create, edit, delete records per zone
-- Tunnels — list, create, delete Cloudflare tunnels
-- Analytics — traffic, requests, bandwidth per zone
-- Cache — purge cache per zone
-
-### BRAND TOOLKIT MODULE (`/brand`)
-- Multi-project support — create projects (BedBouncer, Mobile-Games, CtrlPro, etc.)
-- Per-project: Brand Guidelines, Tone of Voice, AI Reference doc, CSS tokens, Style Guide
-- Asset management — upload/view/delete assets in sections (logos, hero-images, social-media, videos, print, other)
-- Games support — isStudio flag, per-game asset library within a project
-- Save-from-Design — Design module can save generated images directly into Brand Toolkit
-
-### DESIGN MODULE (`/design`) — Creative Studio
-- **Sprites tab** — text-to-image via Gemini (Nano Banana 2); optional reference image upload; model selector (Nano Banana 2 / Pro); size selector (256/512/1024px)
-- **Images tab — Generate mode** — Ideogram v3; aspect ratio, style type, rendering speed, seed, negative prompt; style reference picker (up to 3 Brand Toolkit images with strength slider)
-- **Images tab — Edit mode** — Ideogram v3 Edit (inpainting); source image upload; in-browser mask painting tool (black=keep, white=edit, variable brush size, fill all); auto white mask if no mask drawn
-- **Images tab — Recompose mode** — Gemini img2img (Nano Banana 2); source image upload; model selector; describe new scene in prompt
-- **Video tab** — Kling AI text-to-video; duration (5s/10s); aspect ratio; async polling with status updates
-- Gallery — generated results stored locally; download button; Save to Brand Toolkit button; scissors button (background removal — currently @imgly/background-removal, pending swap to Remove.bg)
-- API status indicator — shows which services are configured
-
-### NOTES MODULE (`/notes`)
-- ClickUp Docs integration — syncs docs and pages from ClickUp workspace
-- Doc list with search
-- Page viewer with markdown rendering
-- Manual sync trigger, last-synced timestamp
-- Create new docs and pages
-
-### CRM MODULE (`/crm`)
-- Contact management — create, edit, delete contacts
-- Contact fields — name, email, phone, company, LinkedIn, website, location, notes
-- Activity log per contact — note, call, email, meeting, task
-- Deals/pipeline — create deals, stage progression (lead → prospect → customer → partner)
-- Gmail sync — pull emails associated with a contact into their profile
-- Contact list with search and stage filtering
-
-### KNOWLEDGE BASE MODULE (`/knowledge`)
-- Per-project knowledge entries
-- Markdown content with simple renderer
-- Tag system — create, filter by tag
-- Create, edit, delete entries
-
-### GITHUB MODULE (`/github`)
-- Profile overview — avatar, bio, stats (repos, followers, following)
-- Activity feed — recent GitHub events
-- Repository list — stars, forks, language, visibility, last updated
-- Issues — open issues across repos, filter by repo
-- Pull Requests — open PRs, status, assignees
-- Per-repo drill-down — commits, issues, PRs
-
-### PROJECTS MODULE (`/projects`)
-- Project list — create, rename projects
-- Per-project task list — create, complete, delete, reorder tasks
-
-### ADMIN MODULE (`/admin`)
-- Keyword groups — create/edit/delete groups for email intelligence
-- Keyword management — add/remove keywords per group
-- Sender profiles — domain-level email sender configuration
-- Audit log — view and create audit entries
-- Email intelligence health check
-
-### SETTINGS MODULE (`/settings`)
-- Vault key management — view all keys, add, delete
-- Trading section — Alpaca paper/live credential fields
-- Partial — full settings not yet complete
-
----
-
-## OUTSTANDING TASKS — NEXT BUILD PRIORITIES
-
-### IMMEDIATE (agreed, not yet done)
-- [ ] **Replace @imgly/background-removal with Remove.bg API** — scissors button in Design gallery cards calls handleRemoveBg() in GalleryCard component. Replace with POST /api/design/remove-bg backend route calling https://api.remove.bg/v1.0/removebg (header X-Api-Key, vault key: remove_bg_api_key, 50 free/month then ~$0.02/image). Uninstall @imgly/background-removal from frontend.
-- [ ] **Add gemini_api_key to vault** — user needs key from aistudio.google.com to unlock Sprites + Recompose
-
-### DESIGN MODULE
-- [ ] Veo 3.1 for video — replace Kling AI with Google Veo 3.1 (same gemini_api_key, discussed not built)
-
-### GMAIL / EMAIL
-- [ ] Email intelligence UI (Tasks 2h-2l) — frontend for rules, tags, keyword groups display in Gmail module
-- [ ] Gmail watch auto-renewal — currently expires every 7 days, needs cron job
-
-### TRADING
-- [ ] Weekly Review tab — design and build (currently stub)
-- [ ] Bot tab — design and build (currently stub)
-- [ ] Trading briefing — verify Perplexity queries wired to scheduler
-
-### INFRASTRUCTURE
-- [ ] Push CTRL codebase to GitHub (critical path)
-- [ ] Create ctrl-trading-agent GitHub repo (separate, private)
-- [ ] Setup wizard — first-run configuration for new users
-- [ ] Notification system — system-wide alerts design
-- [ ] Perplexity backend proxy — /api/search endpoint
-
-### SETTINGS
-- [ ] Full Settings tab — add ClickUp, Perplexity, Gemini, Ideogram, Kling, Remove.bg credential sections
-- [ ] Add remove_bg_api_key field to Settings vault section
-
-### MODULES NOT YET BUILT
-- [ ] Home tab redesign (skill-home.md needs writing first)
-- [ ] ClickUp frontend (backend routes exist, no UI)
-- [ ] Notifications UI
-
----
-
-## API KEYS REQUIRED — VAULT KEYS
-
-| Vault Key | Service | Used by |
-|-----------|---------|---------|
-| google_oauth_tokens | Google | Gmail, Tasks |
-| anthropic_api_key | Anthropic | Claude panel |
-| gemini_api_key | Google Gemini | Design: Sprites, Recompose (Nano Banana 2) |
-| ideogram_api_key | Ideogram | Design: Generate, Edit images |
-| kling_api_key | Kling AI | Design: Video generation |
-| kling_api_secret | Kling AI | Design: Video generation |
-| remove_bg_api_key | Remove.bg | Design: Background removal (PENDING) |
-| replicate_api_token | Replicate | REMOVED — replaced by Gemini |
-| alpaca_paper_key | Alpaca | Trading (paper) |
-| alpaca_paper_secret | Alpaca | Trading (paper) |
-| alpaca_live_key | Alpaca | Trading (live) |
-| alpaca_live_secret | Alpaca | Trading (live) |
-| perplexity_api_key | Perplexity | Trading briefings |
-| cloudflare_api_token | Cloudflare | Cloudflare module |
-| github_personal_token | GitHub | GitHub module |
-| clickup_api_key | ClickUp | Notes, ClickUp sync |
-| clickup_workspace_id | ClickUp | Notes, ClickUp sync |
-
----
-
-## KEY ARCHITECTURAL DECISIONS
-
-- **Replicate replaced by Gemini (Nano Banana 2)** April 2026 — sprites and recompose both on Gemini; gemini_api_key covers both
-- **Ideogram stays for Generate + Edit** — best text accuracy (~90%), best inpainting
-- **Gemini returns data URIs not CDN URLs** — gallery stores data URIs in localStorage; large but acceptable for local app
-- **Ideogram Edit mask must use alpha:false canvas** — RGB PNG required; RGBA rejected by Ideogram API. Hard-won fix. Never revert.
-- **All amounts stored in pence** (integers) — Finance module, never floats
-- **SQLite first** — never query external APIs from display routes; sync to SQLite then read from SQLite
-- **Vault for all secrets** — no hardcoded credentials anywhere
-- **Config blob** at D:\AI Work\.ctrl-config.json — projects, preferences, portable
-
----
-
-## KNOWN ISSUES / GOTCHAS
-
-- @imgly/background-removal (ISNet) clips product photo edges — pending Remove.bg swap
-- Gmail watch expires every 7 days — manual renewal needed until auto-renewal built
-- Port 3001 EADDRINUSE on restart — kill with netstat + taskkill
-- Gemini data URIs in localStorage can approach quota with many large generations
-- PowerShell truncates long pasted commands — save as .ps1 and run
-- No git history yet — repo not pushed to GitHub
-
----
-
-## PROJECTS OUTSIDE CTRL
-
-- **UnifyBI** — hospitality SaaS dashboard, planning phase, first client conversation pending
-- **BedBouncer** — ESP32 smart alarm, Kickstarter prep, needs product video. John uses Design module (Gemini Recompose + Ideogram) to create lifestyle imagery of the alarm clock.
-- **Mobile Games** — planning phase, game concepts to be decided
+- **CTRLPro** — formerly UnifyBI, AI hospitality SaaS dashboard, planning phase. Domains purchased. First client conversation needed before building. Based on public hospitality knowledge only — no Lane7 data ever.
+- **BedBouncer** — ESP32 smart alarm (weight sensor, silences when you leave bed). Working prototype exists. Needs product video for Kickstarter relaunch. Retail £60, early bird £39-45.
+- **Mobile Games** — planning phase, game concepts to be decided, free-to-play hybrid monetisation
