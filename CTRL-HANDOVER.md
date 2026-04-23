@@ -1,140 +1,19 @@
 ﻿# CTRL Project Handover
-*Last updated: 23 April 2026 — session end*
-*Session ended: discussing swapping @imgly/background-removal for Remove.bg API after user found it too aggressive on product photos*
+*Last updated: 23 April 2026*
+*Session ended: discussing swapping @imgly/background-removal for Remove.bg API*
 
 ---
 
 ## HOW TO USE THIS DOCUMENT
 
-You are Claude web browser picking up a CTRL development session.
+You are Claude (web or Code) picking up a CTRL development session.
 John Roberts is the developer. Read this entire document before responding.
-When John returns, he will paste in any files or context from the web session.
 
 The CTRL codebase is at: `D:\AI Work\Control-Centre\`
-Backend: Node.js + Express + TypeScript on port 3001
-Frontend: React 18 + Vite + TypeScript on port 5173
-Terminal server: node-pty WebSocket server on port 3002
+Backend: Node.js + Express + TypeScript — port 3001
+Frontend: React 18 + Vite + TypeScript — port 5173
+Terminal server: node-pty WebSocket — port 3002
 Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db`
-
----
-
-## WHAT WE WERE BUILDING THIS SESSION
-
-This session was entirely focused on the Design module (Creative Studio). We replaced Replicate entirely with Google Gemini (Nano Banana 2) for both Sprites and the new Recompose feature. We also added: Ideogram Edit (inpainting) with an in-browser mask painting tool, img2img scene recomposition via Gemini, optional reference image upload for sprite generation, and a scissors button on gallery cards for background removal. The session ended mid-task: we added @imgly/background-removal for the scissors button but the user found it too aggressive (removing parts of the subject), so the next step is to replace it with the Remove.bg API.
-
----
-
-## CURRENT BUILD STATE
-
-### Recently completed (this session)
-
-- **Trading TS fixes** — fixed `bar.intradayChangePct` -> `bar?.changeFromOpen` in trading-briefing.service.ts; removed `notional` from INSERT in trading-scheduler.service.ts
-- **Trading RoutinesTab rewrite** — added Built-in Briefings panel with Run Now buttons (morning/midday), added Perplexity questions editor per routine, added `perplexity_queries` to TradeRoutine type
-- **Ideogram Edit (inpainting)** — POST /api/design/edit route, editImage() service, full in-browser mask painting tool (MaskEditorModal)
-- **Recompose mode** — POST /api/design/img2img route, third mode button in Images tab toggle (Generate / Edit / Recompose)
-- **Replaced Replicate with Gemini (Nano Banana 2)** — geminiGenerateImage() replaces replicatePost(); vault key changed from replicate_api_token to gemini_api_key; CreativeStatus.replicate renamed to CreativeStatus.gemini throughout
-- **Reference image for Sprites** — optional upload zone in Sprites tab; base64 passed to Gemini as inline_data alongside prompt
-- **Background removal scissors button** — @imgly/background-removal v1.7.0 installed; Scissors icon on all image/sprite gallery cards
-
-### In progress right now
-
-**Remove.bg API integration** — scissors button currently uses @imgly/background-removal (ISNet model, too aggressive on product photos). Agreed to swap for Remove.bg API. NOT yet implemented. Plan:
-- Add POST /api/design/remove-bg backend route (calls remove.bg API with vault key remove_bg_api_key)
-- Update GalleryCard handleRemoveBg() to POST to /api/design/remove-bg instead of using the browser library
-- Can uninstall @imgly/background-removal from frontend once done
-
-### Pending / next steps
-
-1. Replace @imgly/background-removal with Remove.bg API (immediate next task)
-2. User needs gemini_api_key from aistudio.google.com added to vault
-3. Veo 3.1 for video — discussed replacing Kling AI (same gemini_api_key), not implemented
-4. Email intelligence UI (Tasks 2h-2l) — next major module per STATUS.md
-
----
-
-## ALL MODULES — STATUS
-
-| Module | Location | Status | Notes |
-|--------|----------|--------|-------|
-| Home | src/frontend/src/modules/home/ | Basic | Needs redesign |
-| Claude Tab | src/frontend/src/modules/claude-tab/ | Working | xterm.js WebSocket terminal |
-| Gmail/Google | src/frontend/src/modules/gmail/ | Working | Real data loading |
-| Tasks | src/frontend/src/modules/tasks/ | Not built | |
-| Projects | src/frontend/src/modules/projects/ | Not built | |
-| Finance | src/frontend/src/modules/finance/ | Basic | Needs redesign |
-| Trading | src/frontend/src/modules/trading/ | Working | 6-tab layout, Alpaca, RoutinesTab updated this session |
-| GitHub | src/frontend/src/modules/github/ | Stub | |
-| Cloudflare | src/frontend/src/modules/cloudflare/ | Working | |
-| Brand Toolkit | src/frontend/src/modules/brand-toolkit/ | Working | |
-| Design | src/frontend/src/modules/design/ | Updated this session | Sprites+Recompose on Gemini, Edit on Ideogram, scissors BG removal |
-| Settings | src/frontend/src/modules/settings/ | Partial | |
-| Admin | src/frontend/src/modules/admin/ | Not built | |
-
----
-
-## FILES CREATED OR MODIFIED THIS SESSION
-
-```
-src/backend/src/services/creative.service.ts — Replaced replicatePost() with geminiGenerateImage(); generateSprite() uses Gemini + optional referenceImage; generateImg2Img() uses Gemini; getCreativeStatus() returns gemini instead of replicate
-src/backend/src/services/trading-briefing.service.ts — Fixed bar.intradayChangePct -> bar?.changeFromOpen
-src/backend/src/services/trading-scheduler.service.ts — Removed notional from INSERT
-src/backend/src/routes/creative.routes.ts — Added POST /img2img; updated /sprite for referenceImageData; fallback status uses gemini
-src/frontend/src/services/design.service.ts — CreativeStatus replicate->gemini; added img2img(); generateSprite() accepts referenceImageData/referenceMimeType
-src/frontend/src/modules/design/Design.tsx — Recompose mode; Nano Banana 2 models; reference image upload for sprites; GalleryCard scissors button; removed strength slider; all status.replicate -> status.gemini
-src/frontend/src/modules/design/design.css — Added .design-upload-zone--sm
-src/frontend/src/modules/trading/tabs/RoutinesTab.tsx — Full rewrite: Built-in Briefings panel, Perplexity questions editor
-src/frontend/src/modules/trading/trading.css — Added briefings-panel, perplexity-section styles
-src/frontend/src/services/trading.service.ts — Added perplexity_queries to TradeRoutine; added triggerMorningBriefing() and triggerMiddayCheck()
-```
-
----
-
-## RECENT GIT COMMITS
-
-No git history (repo not yet pushed to GitHub)
-
----
-
-## OPEN ISSUES / KNOWN BUGS
-
-- **Background removal too aggressive** — @imgly/background-removal ISNet clips edges on product photos. Replace with Remove.bg API — agreed but not done.
-- **Gemini API key not yet in vault** — Sprites and Recompose disabled until user adds gemini_api_key from aistudio.google.com
-- **Recompose returns data URI** — Gemini returns base64 not CDN URL. Stored as data URI in gallery/localStorage. Can hit quota with many large images. Acceptable for local app.
-- **@imgly/background-removal still installed** — should be uninstalled once Remove.bg is wired in
-
----
-
-## KEY DECISIONS MADE THIS SESSION
-
-- **Replaced Replicate with Gemini (Nano Banana 2)** — one gemini_api_key covers sprites and recomposition; ~$0.045-0.08/image; Nano Banana 2 = gemini-3.1-flash-image-preview
-- **Ideogram stays for Generate and Edit modes** — best text rendering, best inpainting
-- **Remove.bg for background removal** — 50 free/month, ~$0.02/image, accurate for product photos; route through backend
-- **Veo 3.1 discussed for video** — would replace Kling AI, same gemini_api_key; not yet built
-- **Gemini returns data URIs not CDN URLs** — stored directly in gallery state and localStorage
-
----
-
-## BACKEND API ENDPOINTS ADDED THIS SESSION
-
-- `POST /api/design/img2img` — Gemini scene recomposition; body: prompt, imageData, mimeType, model?
-- `POST /api/design/edit` — Ideogram v3 inpainting; body: prompt, imageData, mimeType, maskData, maskMimeType + style options
-- `POST /api/design/sprite` — updated to accept referenceImageData + referenceMimeType (optional)
-
----
-
-## DATABASE CHANGES THIS SESSION
-
-None.
-
----
-
-## IMPORTANT CONTEXT FOR NEXT SESSION
-
-- The scissors (Remove BG) button in GalleryCard calls handleRemoveBg() which currently uses @imgly/background-removal. Replace this with a fetch to POST /api/design/remove-bg.
-- Remove.bg API: POST https://api.remove.bg/v1.0/removebg, header X-Api-Key, send image as FormData with image_file field, returns binary PNG. Vault key: remove_bg_api_key.
-- The MaskEditorModal canvas uses alpha:false context to produce RGB PNG — Ideogram Edit requires this. Do not change.
-- All three image modes (Generate/Edit/Recompose) in the Images tab share imagePrompt state but call different generate functions.
-- Trading RoutinesTab built-in briefings panel is separate from user routines. perplexity_queries stored as JSON string in SQLite.
 
 ---
 
@@ -145,14 +24,223 @@ D:\AI Work\START-ALL.bat
 ```
 
 Or manually:
-- Backend: `cd D:\AI Work\Control-Centre && npm run dev:backend`
+- Backend:  `cd D:\AI Work\Control-Centre && npm run dev:backend`
 - Frontend: `cd D:\AI Work\Control-Centre && npm run dev:frontend`
-- Terminal server: `cd D:\AI Work\Control-Centre\src\terminal-server && npm run dev`
+- Terminal: `cd D:\AI Work\Control-Centre\src\terminal-server && npm run dev`
 
 ---
 
-## PROJECTS OUTSIDE CTRL (for full context)
+## COMPLETE FEATURE LIST — ALL BUILT FUNCTIONALITY
+
+### INFRASTRUCTURE
+- AES-256-GCM encrypted vault — create, unlock, lock, CRUD keys via UI
+- VaultGate — blocks app until vault unlocked
+- Google OAuth — real Gmail auth, token stored in vault
+- App shell — sidebar (collapsible, grouped), topbar, Claude slide-in panel
+- Auth protection on all routes
+- SQLite database with 16+ migrations
+- Config blob at `D:\AI Work\.ctrl-config.json` — projects, preferences
+- Sandboxed file API (read/write/list/delete, locked to D:\AI Work\)
+- Git routes — status, commit, push staging, push live
+
+### GMAIL MODULE (`/gmail`)
+- Full inbox with real Gmail data (synced to SQLite, never direct API from display)
+- Folder tree — labels, virtual folders (Unread, Starred, Sent, etc.)
+- Project filtering bar — filter inbox by configured projects
+- Email list with importance scoring, tags, read/unread state
+- Thread reader — full conversation view
+- Inbox Health Bar — stats (unread, starred, tag coverage)
+- Review Mode — triage panel for inbox cleanup
+- Bulk archive / bulk trash
+- Tag system — per-message tags with bulk operations
+- Unsubscribe — list-unsubscribe parsing, one-click domain unsubscribe
+- Email intelligence backend — rules engine (7 priorities), keyword groups, contact tagging, importance scoring, Pub/Sub webhook, 60-minute background sync
+
+### TASKS MODULE (`/tasks`)
+- Google Tasks integration
+- Task lists sidebar
+- Task board per list — create, complete, delete tasks
+
+### TRADING MODULE (`/trading`)
+- **Overview tab** — portfolio header (equity, P&L, cash), positions table, open orders, manual override panel, market status indicator
+- **Trade Log tab** — filled order history from Alpaca
+- **Research tab** — saved research notes with tags
+- **Weekly Review tab** — stub (GitHub-backed, in design)
+- **Strategies tab** — strategy cards with paper/live toggle, gate enforcement (paper-only guard)
+- **Routines tab** — built-in briefing triggers (Morning Briefing, Midday Check run-now buttons), user-created routines with Perplexity questions editor (add/remove/edit queries per routine)
+- **Bot tab** — stub
+- Paper/live mode toggle with confirmation gate
+- Alpaca API wrapper — paper + live endpoints
+- Trading scheduler — cron jobs (morning briefing 13:15 UTC, midday 17:30 UTC, order sync every 30 min)
+- Trading briefing service — market data, bar charts, Perplexity integration
+
+### FINANCE MODULE (`/finance`)
+- Double-entry bookkeeping (immutable postings, all amounts in pence)
+- Multiple accounts — create, edit, delete, balance anchors
+- Transaction import — CSV upload with configurable column mapping per account
+- Transaction list — filter by account, date range, category; paginated
+- Auto-categorisation rules — pattern matching, bulk apply
+- Reimbursements tracker — claim, resolve, link to transactions
+- Contracts/Agreements — recurring commitments with start/end dates
+- Overview tab — balance summary, recent transactions, spending breakdown
+- CSV format library — save and reuse import configurations
+
+### CLOUDFLARE MODULE (`/cloudflare`)
+- Domains — list all zones, zone detail
+- DNS Records — view, create, edit, delete records per zone
+- Tunnels — list, create, delete Cloudflare tunnels
+- Analytics — traffic, requests, bandwidth per zone
+- Cache — purge cache per zone
+
+### BRAND TOOLKIT MODULE (`/brand`)
+- Multi-project support — create projects (BedBouncer, Mobile-Games, CtrlPro, etc.)
+- Per-project: Brand Guidelines, Tone of Voice, AI Reference doc, CSS tokens, Style Guide
+- Asset management — upload/view/delete assets in sections (logos, hero-images, social-media, videos, print, other)
+- Games support — isStudio flag, per-game asset library within a project
+- Save-from-Design — Design module can save generated images directly into Brand Toolkit
+
+### DESIGN MODULE (`/design`) — Creative Studio
+- **Sprites tab** — text-to-image via Gemini (Nano Banana 2); optional reference image upload; model selector (Nano Banana 2 / Pro); size selector (256/512/1024px)
+- **Images tab — Generate mode** — Ideogram v3; aspect ratio, style type, rendering speed, seed, negative prompt; style reference picker (up to 3 Brand Toolkit images with strength slider)
+- **Images tab — Edit mode** — Ideogram v3 Edit (inpainting); source image upload; in-browser mask painting tool (black=keep, white=edit, variable brush size, fill all); auto white mask if no mask drawn
+- **Images tab — Recompose mode** — Gemini img2img (Nano Banana 2); source image upload; model selector; describe new scene in prompt
+- **Video tab** — Kling AI text-to-video; duration (5s/10s); aspect ratio; async polling with status updates
+- Gallery — generated results stored locally; download button; Save to Brand Toolkit button; scissors button (background removal — currently @imgly/background-removal, pending swap to Remove.bg)
+- API status indicator — shows which services are configured
+
+### NOTES MODULE (`/notes`)
+- ClickUp Docs integration — syncs docs and pages from ClickUp workspace
+- Doc list with search
+- Page viewer with markdown rendering
+- Manual sync trigger, last-synced timestamp
+- Create new docs and pages
+
+### CRM MODULE (`/crm`)
+- Contact management — create, edit, delete contacts
+- Contact fields — name, email, phone, company, LinkedIn, website, location, notes
+- Activity log per contact — note, call, email, meeting, task
+- Deals/pipeline — create deals, stage progression (lead → prospect → customer → partner)
+- Gmail sync — pull emails associated with a contact into their profile
+- Contact list with search and stage filtering
+
+### KNOWLEDGE BASE MODULE (`/knowledge`)
+- Per-project knowledge entries
+- Markdown content with simple renderer
+- Tag system — create, filter by tag
+- Create, edit, delete entries
+
+### GITHUB MODULE (`/github`)
+- Profile overview — avatar, bio, stats (repos, followers, following)
+- Activity feed — recent GitHub events
+- Repository list — stars, forks, language, visibility, last updated
+- Issues — open issues across repos, filter by repo
+- Pull Requests — open PRs, status, assignees
+- Per-repo drill-down — commits, issues, PRs
+
+### PROJECTS MODULE (`/projects`)
+- Project list — create, rename projects
+- Per-project task list — create, complete, delete, reorder tasks
+
+### ADMIN MODULE (`/admin`)
+- Keyword groups — create/edit/delete groups for email intelligence
+- Keyword management — add/remove keywords per group
+- Sender profiles — domain-level email sender configuration
+- Audit log — view and create audit entries
+- Email intelligence health check
+
+### SETTINGS MODULE (`/settings`)
+- Vault key management — view all keys, add, delete
+- Trading section — Alpaca paper/live credential fields
+- Partial — full settings not yet complete
+
+---
+
+## OUTSTANDING TASKS — NEXT BUILD PRIORITIES
+
+### IMMEDIATE (agreed, not yet done)
+- [ ] **Replace @imgly/background-removal with Remove.bg API** — scissors button in Design gallery cards calls handleRemoveBg() in GalleryCard component. Replace with POST /api/design/remove-bg backend route calling https://api.remove.bg/v1.0/removebg (header X-Api-Key, vault key: remove_bg_api_key, 50 free/month then ~$0.02/image). Uninstall @imgly/background-removal from frontend.
+- [ ] **Add gemini_api_key to vault** — user needs key from aistudio.google.com to unlock Sprites + Recompose
+
+### DESIGN MODULE
+- [ ] Veo 3.1 for video — replace Kling AI with Google Veo 3.1 (same gemini_api_key, discussed not built)
+
+### GMAIL / EMAIL
+- [ ] Email intelligence UI (Tasks 2h-2l) — frontend for rules, tags, keyword groups display in Gmail module
+- [ ] Gmail watch auto-renewal — currently expires every 7 days, needs cron job
+
+### TRADING
+- [ ] Weekly Review tab — design and build (currently stub)
+- [ ] Bot tab — design and build (currently stub)
+- [ ] Trading briefing — verify Perplexity queries wired to scheduler
+
+### INFRASTRUCTURE
+- [ ] Push CTRL codebase to GitHub (critical path)
+- [ ] Create ctrl-trading-agent GitHub repo (separate, private)
+- [ ] Setup wizard — first-run configuration for new users
+- [ ] Notification system — system-wide alerts design
+- [ ] Perplexity backend proxy — /api/search endpoint
+
+### SETTINGS
+- [ ] Full Settings tab — add ClickUp, Perplexity, Gemini, Ideogram, Kling, Remove.bg credential sections
+- [ ] Add remove_bg_api_key field to Settings vault section
+
+### MODULES NOT YET BUILT
+- [ ] Home tab redesign (skill-home.md needs writing first)
+- [ ] ClickUp frontend (backend routes exist, no UI)
+- [ ] Notifications UI
+
+---
+
+## API KEYS REQUIRED — VAULT KEYS
+
+| Vault Key | Service | Used by |
+|-----------|---------|---------|
+| google_oauth_tokens | Google | Gmail, Tasks |
+| anthropic_api_key | Anthropic | Claude panel |
+| gemini_api_key | Google Gemini | Design: Sprites, Recompose (Nano Banana 2) |
+| ideogram_api_key | Ideogram | Design: Generate, Edit images |
+| kling_api_key | Kling AI | Design: Video generation |
+| kling_api_secret | Kling AI | Design: Video generation |
+| remove_bg_api_key | Remove.bg | Design: Background removal (PENDING) |
+| replicate_api_token | Replicate | REMOVED — replaced by Gemini |
+| alpaca_paper_key | Alpaca | Trading (paper) |
+| alpaca_paper_secret | Alpaca | Trading (paper) |
+| alpaca_live_key | Alpaca | Trading (live) |
+| alpaca_live_secret | Alpaca | Trading (live) |
+| perplexity_api_key | Perplexity | Trading briefings |
+| cloudflare_api_token | Cloudflare | Cloudflare module |
+| github_personal_token | GitHub | GitHub module |
+| clickup_api_key | ClickUp | Notes, ClickUp sync |
+| clickup_workspace_id | ClickUp | Notes, ClickUp sync |
+
+---
+
+## KEY ARCHITECTURAL DECISIONS
+
+- **Replicate replaced by Gemini (Nano Banana 2)** April 2026 — sprites and recompose both on Gemini; gemini_api_key covers both
+- **Ideogram stays for Generate + Edit** — best text accuracy (~90%), best inpainting
+- **Gemini returns data URIs not CDN URLs** — gallery stores data URIs in localStorage; large but acceptable for local app
+- **Ideogram Edit mask must use alpha:false canvas** — RGB PNG required; RGBA rejected by Ideogram API. Hard-won fix. Never revert.
+- **All amounts stored in pence** (integers) — Finance module, never floats
+- **SQLite first** — never query external APIs from display routes; sync to SQLite then read from SQLite
+- **Vault for all secrets** — no hardcoded credentials anywhere
+- **Config blob** at D:\AI Work\.ctrl-config.json — projects, preferences, portable
+
+---
+
+## KNOWN ISSUES / GOTCHAS
+
+- @imgly/background-removal (ISNet) clips product photo edges — pending Remove.bg swap
+- Gmail watch expires every 7 days — manual renewal needed until auto-renewal built
+- Port 3001 EADDRINUSE on restart — kill with netstat + taskkill
+- Gemini data URIs in localStorage can approach quota with many large generations
+- PowerShell truncates long pasted commands — save as .ps1 and run
+- No git history yet — repo not pushed to GitHub
+
+---
+
+## PROJECTS OUTSIDE CTRL
 
 - **UnifyBI** — hospitality SaaS dashboard, planning phase, first client conversation pending
-- **BedBouncer** — ESP32 smart alarm, Kickstarter prep, needs product video. John was testing Nano Banana 2 and Ideogram for lifestyle imagery of the alarm clock.
+- **BedBouncer** — ESP32 smart alarm, Kickstarter prep, needs product video. John uses Design module (Gemini Recompose + Ideogram) to create lifestyle imagery of the alarm clock.
 - **Mobile Games** — planning phase, game concepts to be decided
