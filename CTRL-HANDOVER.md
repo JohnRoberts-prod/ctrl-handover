@@ -1,6 +1,6 @@
 # CTRL Project Handover
-*Last updated: 2026-04-23 UTC*
-*Session ended: John typed /afk — no active build task in progress this session*
+*Last updated: 2026-04-25 — End of evening session*
+*Session ended: BatonDrop Phaser 3 build — full gameplay loop running, sprite sizing fix, all skill/knowledge files updated, then /afk*
 
 ---
 
@@ -8,149 +8,270 @@
 
 You are Claude web browser picking up a CTRL development session.
 John Roberts is the developer. Read this entire document before responding.
-When John returns, he will paste in any files or context from the web session.
 
-The CTRL codebase is at: Backend: Node.js + Express + TypeScript on port 3001
+There are TWO active projects:
+
+**CTRL Control Centre** — Personal business OS (on hold this session)
+Codebase: `D:\AI Work\Control-Centre\`
+Backend: Node.js + Express + TypeScript on port 3001
 Frontend: React 18 + Vite + TypeScript on port 5173
-Terminal server: node-pty WebSocket server on port 3002
-Database: SQLite (better-sqlite3) at 
+Database: SQLite at `D:\AI Work\.ctrl-data.db`
+
+**BatonDrop** — Mobile arcade game (ACTIVE this session)
+Codebase: `D:\AI Work\Mobile-Games\games\batondrop\src\`
+Dev server: http://localhost:3000 (Vite)
+Tech: Phaser 3 + TypeScript + Capacitor
+
 ---
 
-## WHAT WE WERE BUILDING THIS SESSION
+## WHAT WE WERE BUILDING THIS SESSION — BATONDROP
 
-No active build task was in progress this session. John typed /afk immediately, so this handover is based entirely on STATUS.md and project memory. The current build priority per STATUS.md is Email Intelligence UI (Tasks 2h-2l). All email intelligence backend is complete. The next Claude Code session should start by reading skill-email-intelligence.md and picking up from Task 2h.
+We built the complete Phaser 3 BatonDrop game from scratch. The full gameplay loop is running:
+Boot → Preload → Menu → Game → HUD → GameOver. All core systems are implemented.
+
+This session covered:
+- Building all game systems from scratch (scenes, objects, systems — full list below)
+- Balance calibration: researched mobile session data (median 5-6 min) to tune difficulty curve
+- Moving real Nano Banana 2 baton sprites into src/assets/batons/ and renaming them correctly
+- Fixing oversized baton sprites: AI sprites are 512px+ raw; added setDisplaySize(54, 200) in Baton.ts and Menu.ts
+- Updating STATUS.md, KNOWLEDGE_BASE_GAMING.md, skill-batondrop-workflow.md, and memory files
+
+Final fix before /afk: Menu.ts createHangingBatons() used hardcoded batonH=144 and no setDisplaySize.
+Fixed by importing BATON_DISPLAY from AssetManifest and calling setDisplaySize(BATON_DISPLAY.w, BATON_DISPLAY.h).
 
 ---
 
-## CURRENT BUILD STATE
+## CURRENT BATONDROP BUILD STATE
 
-### Recently completed (prior sessions)
-- Full email intelligence backend: SQLite migration 5, Gmail Pub/Sub webhook, rules engine (7 priorities), keyword groups, contact tagging, importance scoring, thread state, List-Unsubscribe parsing, 60-minute background sync
-- Trading tab: Alpaca connected, 6-tab layout (Overview, Trade Log, Research, Weekly, Strategies, Routines), paper/live toggle, vault-backed credentials in Settings, SQLite migrations 1-16
+### Complete and working (zero TypeScript errors)
+- src/config/AssetManifest.ts — ATLAS, FRAMES, PH, BG, AUDIO, BATON_IMAGES, BATON_DISPLAY, LANE_BATON_KEYS
+- src/config/GameBalance.ts — tunable constants, research-calibrated speed curve + level formula
+- src/config/BatonTypes.ts — all 7 baton definitions + weighted random picker
+- src/scenes/Boot.ts — placeholder texture generation (6 baton colours, hit zone, symbol, particle)
+- src/scenes/Preload.ts — progress bar, loads real baton sprites, graceful missing-file handling
+- src/scenes/Menu.ts — perspective runway, hanging baton sway, PLAY + 3 buttons, correct sizing
+- src/scenes/ComingSoon.ts — stub for unbuilt scenes
+- src/scenes/Game.ts — core gameplay, registry init, input handling, game-over listener
+- src/scenes/HUD.ts — parallel overlay scene, purely reactive (reads registry only, never writes)
+- src/scenes/GameOver.ts — score display, PLAY AGAIN / MENU buttons
+- src/systems/DifficultySystem.ts — level/speed/gap helpers, checkLevelUp()
+- src/systems/ScoreSystem.ts — scoring, combo, fever timer (owned here not HUD), loseLife()
+- src/objects/Baton.ts — Phaser Container, pool-managed, correct setDisplaySize
+- src/objects/BatonPool.ts — 20 pre-allocated batons, acquire/release
+- src/objects/HitZone.ts — per-lane visual, judgement text flash, pulse on approach
+- src/objects/LaneManager.ts — sway, pre-drop tell, Quad.easeIn drop, hit detection, replacement
+- src/main.ts — Phaser.Game config, all scenes registered
+- src/assets/batons/ — 6 real sprites (blue, red, yellow, green, purple, cyan) from Nano Banana 2
+
+### NOT yet built (priority order)
+1. Particle effects on hit (PERFECT = big burst, GOOD = medium, LATE = small)
+2. Screen shake on miss / life lost
+3. Level-up transition animation (flash + new lane slides in)
+4. Sound integration (placeholder beeps wired to events, real SFX later)
+5. Ghost baton mechanics (hover 1s mid-screen via delayedCall tween pause)
+6. Bounce baton mechanics (squash on impact, bounce, tap second pass only)
+7. Chain baton mechanics (longer baton, hold tap for duration)
+8. Background switching per level range (9 themes, load commented lines in Preload.ts)
+9. Continue screen (watch ad / 300 coins for 3 lives)
+10. Coin award system + HUD coin display
+11. SaveSystem (@capacitor/preferences)
+12. Economy/shop system (power-ups, cosmetic shop)
+13. AdMob integration (@capacitor-community/admob)
+14. Daily challenge mode
+15. Leaderboard (local first, online when backend built)
+
+---
+
+## BATONDROP ARCHITECTURE — KEY DECISIONS LOCKED
+
+### Speed multiplier direction (bug fixed this session)
+speedMultiplier > 1 = FASTER = SHORTER duration. Always DIVIDE:
+  dropDurMs = difficulty.dropDurationMs / def.speedMultiplier
+Never multiply — that makes speed batons slower (duration x 2 = twice as long).
+
+### Baton sizing rule (critical)
+Always call setDisplaySize(BATON_DISPLAY.w, BATON_DISPLAY.h) on every baton sprite.
+BATON_DISPLAY = { w: 54, h: 200 } in AssetManifest.ts.
+AI sprites are 512px+ raw — without this they fill the entire screen.
+Applies in: Baton.prepare(), Menu.createHangingBatons(), any future scene showing batons.
+
+### Timing math
+T_STAR_FRAC = sqrt((HZ_CY - HANG_Y) / (EXIT_Y - HANG_Y)) = approx 0.844
+perfectTime = scene.time.now + dropDurMs * T_STAR_FRAC
+delta = tapTime - perfectTime  (negative=early, positive=late)
+Windows: +-80ms perfect, +-150ms good, +-200ms late. Outside = silently ignored (not a miss).
+Miss deadline fires at T_STAR_FRAC * dropDurMs + 200ms + 16ms after drop start.
+
+### Fever timer
+Owned by ScoreSystem. HUD only reacts to EVT_FEVER_START/EVT_FEVER_END registry events.
+Never put gameplay timers in HUD.
+
+### HUD
+Purely reactive — reads registry only, never writes game state. Subscribes via:
+  registry.events.on('changedata', this.onRegistryChange, this)
+
+### Cross-scene state
+Phaser registry with REG constants as keys. Events fired as one-shot values:
+  registry.set(REG.EVT_LEVEL_UP, level)
+
+### Object pool
+BatonPool pre-allocates 20 Batons at scene init via scene.add.existing().
+Never create/destroy during gameplay — only prepare()/deactivate().
+
+### Phaser Container children
+Use scene.make.image() not scene.add.image() for Container children.
+scene.add.* adds to display list directly. scene.make.* creates without adding — Container manages them.
+
+### Spawn gap
+Measured from drop START not landing. Allows multiple batons in-flight at high levels.
+
+### Balance
+Level 1: 2200ms drop, 1857ms reaction window (very forgiving)
+Level 10: 1804ms drop, 1523ms reaction (comfortable)
+Level 20: 1450ms drop, 1224ms reaction (challenging)
+Level 50: 739ms drop, 624ms reaction (extreme)
+Level formula: 5000 * level + 400 * level * (level + 1) — quadratic, per-level grows by 800pts
+Most players die levels 3-6 (~3-6 min total). Level 15 = elite territory (~26 min).
+
+---
+
+## FILES MODIFIED THIS SESSION
+
+```
+src/config/AssetManifest.ts         — Added BATON_IMAGES, BATON_DISPLAY, updated LANE_BATON_KEYS
+src/config/GameBalance.ts           — Full rewrite: quadratic level formula, calibrated speed curve
+src/scenes/Preload.ts               — Added BATON_IMAGES load loop for real sprites
+src/scenes/Menu.ts                  — Fixed baton sizing: import BATON_DISPLAY + setDisplaySize call
+src/objects/Baton.ts                — setDisplaySize(BATON_DISPLAY.w, BATON_DISPLAY.h) in prepare()
+src/assets/batons/baton-blue.png    — Moved and renamed from files/brand/game-sprites/batons/
+src/assets/batons/baton-red.png     — Moved and renamed
+src/assets/batons/baton-yellow.png  — Moved and renamed
+src/assets/batons/baton-green.png   — Moved and renamed
+src/assets/batons/baton-purple.png  — Moved and renamed
+src/assets/batons/baton-cyan.png    — Moved and renamed
+STATUS.md                           — Full rewrite: complete built list, priority todo list
+KNOWLEDGE_BASE_GAMING.md            — Section 15 updated: checked off built, remaining list
+skills/skill-batondrop-workflow.md  — Added Phaser 3 Architecture section with all key decisions
+```
+
+Memory files updated:
+```
+memory/project_batondrop.md  — Full current build state + architecture decisions
+memory/build-lessons.md      — Added 4 Phaser-specific lessons
+```
+
+---
+
+## CTRL CONTROL CENTRE STATE (not worked on this session)
+
+Next build priority: Email intelligence UI (Tasks 2h-2l).
+All email intelligence backend is complete.
+
+Working in CTRL:
 - App shell, sidebar, topbar, Claude panel
-- VaultGate UI (create and unlock vault)
-- Google OAuth — real Gmail loading
-- Gmail tab — real data displaying
-- Claude tab — xterm.js WebSocket terminal
-- Auth protection on all routes
+- VaultGate UI, Google OAuth, real Gmail loading
+- Gmail tab, Claude tab (xterm.js terminal), Home/Finances tabs (basic)
+- Email intelligence backend: rules engine, Gmail Pub/Sub webhook, importance scoring
+- Trading tab: Alpaca connected, 6-tab layout, overview + strategies tabs
 
-### In progress right now
-Nothing was in progress at /afk time. Clean stopping point.
+Next skill files to build (in order):
+1. skill-email-intelligence.md — UI tasks 2h-2l (DO NEXT)
+2. skill-notes.md — Notes tab using ClickUp Docs v3 API
+3. skill-github.md — needs design session first
+4. skill-settings.md — trading/perplexity/clickup sections
+5. skill-clickup.md — workspace auto-setup
 
-### Pending / next steps
-1. Email Intelligence UI — Tasks 2h-2l (DO FIRST — read skill-email-intelligence.md)
-2. Notes tab — skill-notes.md designed 23 Apr, ClickUp Docs v3 API
-3. GitHub integration service — skill-github.md needs designing before building
-4. Settings tab completion — trading/perplexity/clickup sections
-5. ClickUp integration — workspace auto-setup
-6. Perplexity service — backend proxy
-7. Push CTRL to GitHub (critical pending computer task)
+Pending manual tasks:
+- Push CTRL to GitHub (critical path — do first)
+- Create ctrl-trading-agent GitHub repo (separate, private)
+- Create ClickUp workspace manually at clickup.com (name: CTRL)
+- Alpaca paper account signup if not done
+- Perplexity API key generation
 
----
-
-## ALL MODULES — STATUS
-
-| Module | Location | Status | Notes |
-|--------|----------|--------|-------|
-| App Shell / Sidebar | src/frontend/src/ | Working | Dark canvas, collapsible 200px/62px |
-| VaultGate | src/frontend/src/modules/ | Working | Create and unlock vault |
-| Google OAuth | src/backend/ | Working | Real Gmail loading |
-| Gmail Tab | src/frontend/src/modules/gmail/ | Working | Real data, intelligence backend complete |
-| Email Intelligence Backend | src/backend/ | Complete | Tasks 2a-2g done, UI 2h-2l pending |
-| Claude Tab | src/frontend/src/modules/claude-tab/ | Working | xterm.js WebSocket terminal |
-| Home Tab | src/frontend/src/modules/home/ | Basic | Needs redesign — skill-home.md not yet written |
-| Finance Tab | src/frontend/src/modules/finance/ | Basic | Needs redesign — skill-finance-dashboard.md |
-| Trading Tab | src/frontend/src/modules/trading/ | Working | 6 tabs, Alpaca paper+live, strategies |
-| GitHub Tab | src/frontend/src/modules/github/ | Stub | skill-github.md needs designing first |
-| Notes Tab | — | Not built | skill-notes.md designed 23 Apr, ready to build |
-| CRM Tab | — | Not built | skill-crm.md not written |
-| Knowledge Base | — | Not built | skill-knowledge-base.md not written |
-| Brand Toolkit | — | Not built | skill-brand-toolkit.md not written |
-| Settings | src/frontend/src/modules/settings/ | Partial | Trading section done, others missing |
-| Admin Tab | — | Not built | skill-admin.md not written |
-
----
-
-## FILES CREATED OR MODIFIED THIS SESSION
-
-None — /afk was called immediately with no build work this session.
-
----
-
-## RECENT GIT COMMITS
-
-No git history available — CTRL has not yet been pushed to GitHub.
-Pushing CTRL to GitHub is listed as a critical pending computer task in STATUS.md.
-
----
-
-## OPEN ISSUES / KNOWN BUGS
-
-- PowerShell truncates long pasted commands — save as .ps1 and run instead
-- Port 3001 EADDRINUSE on restart — kill with: netstat -ano | findstr :3001, then taskkill /PID [pid] /F
+Known issues:
+- PowerShell truncates long pasted commands — save as .ps1 and run
+- Port 3001 EADDRINUSE on restart — kill with netstat + taskkill
 - Gmail watch expires every 7 days — auto-renewal not yet built
-- CTRL not yet on GitHub — this is a critical pending task
 
 ---
 
-## KEY DECISIONS MADE THIS SESSION
+## CLICKUP NOTE
 
-No decisions made this session. Refer to CLAUDE.md for all standing decisions:
-- CTRL is a local web app (not desktop)
-- Google OAuth for login — no username/password
-- AES-256-GCM vault for all secrets
-- Config blob at D:AI Work.ctrl-config.json
-- File system sandboxed to D:AI Work only
-- SQLite first — never query Gmail API directly from display routes
-- Claude API only called when user explicitly asks (zero background token use)
-- Staging: one click. Live: explicit confirmation required
+ClickUp is not connected in CTRL yet. The vault does not have clickup_api_key or clickup_workspace_id set.
+The workspace must be created manually at clickup.com first, then connected via Settings → Integrations → ClickUp in CTRL.
+
+BatonDrop tasks to create in ClickUp once connected (priority order):
+P1: Particle effects on hit
+P1: Screen shake on miss/life lost
+P1: Level-up transition animation
+P1: Sound integration (beeps → real SFX)
+P2: SaveSystem (@capacitor/preferences)
+P2: Coin award system + HUD coin display
+P3: Ghost baton mechanics
+P3: Bounce baton mechanics
+P3: Chain baton mechanics
+P3: Background switching per level range
+P4: Continue screen (ad + coin option)
+P4: Economy/shop system
+P4: AdMob integration
+P5: Daily challenge
+P5: Leaderboard
 
 ---
 
-## BACKEND API ENDPOINTS ADDED THIS SESSION
+## BATONDROP ASSETS STILL NEEDED
 
-None this session.
+Generate via Nano Banana 2 in CTRL Design Tab → Sprites tab.
+Master baton prompt locked in: D:\AI Work\Mobile-Games\games\batondrop\skills\skill-batondrop-workflow.md
 
----
-
-## DATABASE CHANGES THIS SESSION
-
-None this session. Current schema is through migration 16 (trading tables).
+Still needed:
+- Symbol overlays: skull, speed (down arrows x2), slow (snail), ghost outline, bounce (up/down arrows), chain link
+- Hit zone sprite (resting + pulse states)
+- Particle burst texture
+- All 9 background scenes (perspective runway, vanishing point centre-top)
+- App icon (512x512, baton on dark bg, amber accent, no text)
+- Feature graphic (1024x500, gameplay + logo)
+- 5 Play Store screenshots
 
 ---
 
 ## IMPORTANT CONTEXT FOR NEXT SESSION
 
-1. READ skill-email-intelligence.md FIRST — this is the next build task (2h-2l)
-2. Notes tab skill file is designed and ready — skill-notes.md exists and is ready to build after email UI
-3. GitHub tab CANNOT be built yet — skill-github.md must be designed in Claude.ai first
-4. CTRL is not on GitHub yet — before any destructive local changes, manually push first
-5. Gmail Pub/Sub webhook needs a Cloudflare Tunnel URL — public webhook not yet configured
-6. Alpaca paper account may not be signed up yet — check before testing trading features
-7. The email tagging system is a core behavior: tag every email touched, learn tags continuously
+1. Ghost, Bounce, and Chain batons are defined in BatonTypes.ts but have no special behaviour.
+   Until mechanics are built, set their weight to 0 in pickBatonKind (weighted random).
+   They behave as standard drops if weight > 0 and unlock level is reached.
+
+2. Baton sprites may have white backgrounds (not transparent — Nano Banana 2 default).
+   If they look blocky in game: apply blend mode on bodySprite.setBlendMode(Phaser.BlendModes.ADD),
+   or request new transparent versions. Not yet tested on device.
+
+3. BATON_DISPLAY = { w: 54, h: 200 }. At 6 lanes (450px canvas), lane width = 75px.
+   Each baton leaves ~10px padding each side. May need adjustment after physical device testing.
+
+4. KNOWLEDGE_BASE_GAMING.md section 4 level table shows old formula (500 * level^1.4).
+   Actual implemented formula is the quadratic one in GameBalance.ts. Section 4 is reference only.
+
+5. Sprite colour-to-lane mapping: LANE_BATON_KEYS[0]=blue, [1]=red, [2]=yellow, [3]=green, [4]=purple, [5]=cyan.
+   If wrong colours show in wrong lanes, check this array in AssetManifest.ts.
 
 ---
 
+## HOW TO START BATONDROP
 
-## CRITICAL RULE — NO ANTHROPIC API KEY
+cd D:\AI Work\Mobile-Games\games\batondrop\src
+npm run dev
+Opens at http://localhost:3000
 
-John runs Claude Code on a Max plan subscription continuously.
-**There is NO separate Anthropic API key. Never suggest it.**
-Never build features that make direct Anthropic SDK calls.
-All AI assistance happens through Claude Code itself.
-If a feature needs AI reasoning, it must be user-initiated through Claude Code — not autonomous background API calls.
-Existing references to anthropic_api_key in the codebase (trading-briefing.service.ts, claude.service.ts) are flagged for redesign.
+## HOW TO START CTRL
 
----
-## HOW TO START THE SYSTEM
-
-\
+D:\AI Work\START-ALL.bat
 Or manually:
-- Backend: - Frontend: - Terminal server: 
+- Backend:  cd D:\AI Work\Control-Centre && npm run dev:backend
+- Frontend: cd D:\AI Work\Control-Centre && npm run dev:frontend
+- Terminal: cd D:\AI Work\Control-Centre\src\terminal-server && npm run dev
+
 ---
 
-## PROJECTS OUTSIDE CTRL (for full context)
-
-- **CTRLPro** — formerly UnifyBI, AI hospitality SaaS dashboard, planning phase. Domains purchased. First client conversation needed before building. Based on public hospitality knowledge only — no Lane7 data ever.
-- **BedBouncer** — ESP32 smart alarm (weight sensor, silences when you leave bed). Working prototype exists. Needs product video for Kickstarter relaunch. Retail £60, early bird £39-45.
-- **Mobile Games** — planning phase, game concepts to be decided, free-to-play hybrid monetisation
+*Next priority: Particle effects on hit, then screen shake on miss.*
+*BatonDrop: D:\AI Work\Mobile-Games\games\batondrop\src\*
+*CTRL: D:\AI Work\Control-Centre\*
