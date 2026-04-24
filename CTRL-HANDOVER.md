@@ -131,6 +131,17 @@ None this session. Current schema is through migration 16 (trading tables).
 
 ---
 
+
+## CRITICAL RULE — NO ANTHROPIC API KEY
+
+John runs Claude Code on a Max plan subscription continuously.
+**There is NO separate Anthropic API key. Never suggest it.**
+Never build features that make direct Anthropic SDK calls.
+All AI assistance happens through Claude Code itself.
+If a feature needs AI reasoning, it must be user-initiated through Claude Code — not autonomous background API calls.
+Existing references to anthropic_api_key in the codebase (trading-briefing.service.ts, claude.service.ts) are flagged for redesign.
+
+---
 ## HOW TO START THE SYSTEM
 
 \
