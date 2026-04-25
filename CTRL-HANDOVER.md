@@ -275,3 +275,14 @@ Or manually:
 *Next priority: Particle effects on hit, then screen shake on miss.*
 *BatonDrop: D:\AI Work\Mobile-Games\games\batondrop\src\*
 *CTRL: D:\AI Work\Control-Centre\*
+
+---
+
+## FUTURE RELEASE NOTE (added after /afk)
+
+Future plan: Package CTRL as an Electron desktop app.
+Each social media platform (TikTok, Instagram, Twitter/X, YouTube Studio, LinkedIn, Facebook)
+gets its own embedded tab using Electron webview/BrowserView — full native session, no API.
+Existing React + Vite frontend runs inside Electron as-is.
+Packaged as .exe (Windows) + .dmg (Mac) via electron-builder.
+Full spec in: D:AI WorkControl-CentreskillsCTRL-future-requests.md
