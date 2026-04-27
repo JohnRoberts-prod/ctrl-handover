@@ -1,46 +1,77 @@
-﻿# BatonDrop - Session Handover
+# BatonDrop Project Handover
 Last updated: 2026-04-27 UTC
+Session ended: Mobile sound fix. react-native-sound installed and deployed. Sound on physical device not yet confirmed.
 
-## NEXT STEPS (after PC restart)
-1. Open Android Studio -> Device Manager -> press Play on Pixel emulator
-2. Confirm: & "C:\Users\admin\AppData\Local\Android\Sdk\platform-tools\adb.exe" devices
-3. Start Metro: cd "D:\AI Work\Mobile-Games\games\batondrop\app" && npx react-native start --reset-cache
-4. Build: $env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"; $env:ANDROID_HOME="C:\Users\admin\AppData\Local\Android\Sdk"; cd "D:\AI Work\Mobile-Games\games\batondrop\app\android"; .\gradlew.bat app:installDebug
-5. Open BatonDrop from emulator launcher. adb reverse NOT needed for emulator.
+## HOW TO USE THIS DOCUMENT
+You are Claude web browser picking up a BatonDrop development session.
+John Roberts is the developer. Read this entire document before responding.
+Codebase: D:\AI Work\Mobile-Games\games\batondrop\app
+Stack: React Native 0.85.2 + TypeScript, Android (Pixel 8 Pro + emulator), newArchEnabled=true
 
-## THIS SESSION
+## WHAT WE WERE DOING
+Fixing sound on mobile. react-native-track-player was broken (128KB patch mess, no sound on device). Switched to react-native-sound 0.13.0 (bridge-compatible with New Architecture). MP3s moved from assets/ to res/raw/. build-phone.ps1 convenience script created. Final build was installing when /afk called.
 
-Two tasks done:
-1. MECHANICS REWRITE - fixed all hits registering as miss. Root cause: runOnJS race condition. Fix: pre-compute perfectTimeMs = Date.now() + arrivalDuration synchronously in FallingBaton useEffect before animation starts. Store in GameEngine.batonPerfectTimes Map.
-2. BRAND PASS - Luckiest Guy arcade font, 3D tap pads (face+shadow+highlight), amber HUD, dark navy background, BATON/DROP title, 3D amber PLAY button.
+## WHAT WAS COMPLETED THIS SESSION
+- Removed react-native-track-player + patch file
+- Installed react-native-sound@0.13.0
+- Rewrote MusicPlayer.ts: lazy-loads 3 tracks, sequences them in a loop, skipped guard prevents infinite loop on load failure
+- Gutted MusicService.ts (RNTP boilerplate, now empty stub)
+- Cleaned index.js (removed RNTP service registration)
+- Created src/types/react-native-sound.d.ts (no @types package exists)
+- Fixed TS error in GameScreen.tsx (redundant quality !== 'miss' after early return)
+- Copied MP3s to android/app/src/main/res/raw/
+- Created build-phone.ps1 (bundle + installDebug in one command)
+- Previous session: level gate 4+level formula, exponential decay speed curves, baton visual continuity
+- Git commit 881dcb3 pushed
 
-## FILES CHANGED
-app/src/constants/fonts.ts - NEW
-app/src/constants/colours.ts - REWRITTEN (brand palette)
-app/src/components/TapBox.tsx - REWRITTEN (3D pad + press animation)
-app/src/components/HUD.tsx - REWRITTEN (Luckiest Guy, amber border)
-app/src/screens/GameOverScreen.tsx - REWRITTEN (arcade style)
-app/src/screens/GameScreen.tsx - REWRITTEN (idle screen + PLAY button)
-app/src/engine/GameEngine.ts - REWRITTEN (proper hit detection)
-app/src/components/FallingBaton.tsx - REWRITTEN (sync onArrival)
-android/app/src/main/assets/fonts/LuckiestGuy-Regular.ttf - NEW
-android/app/src/main/assets/fonts/JetBrainsMono-Regular.ttf - NEW
+## IN PROGRESS
+Sound on phone not yet confirmed. Build was running at /afk.
 
-## ENVIRONMENT
-JAVA_HOME: C:\Program Files\Android\Android Studio\jbr
-ANDROID_HOME: C:\Users\admin\AppData\Local\Android\Sdk
-adb: C:\Users\admin\AppData\Local\Android\Sdk\platform-tools\adb.exe
-RN 0.85, Metro 0.84.3, port 8081
+## NEXT STEPS
+1. Confirm sound works on phone (unplug after install, open app)
+2. If no sound: check logcat for [MusicPlayer] warnings
+3. If working: particle effects on hit (next priority)
+4. Then: screen shake on miss
+5. Then: level-up transition animation
 
-## TEST AFTER RESTART
-- Luckiest Guy font on title/score
-- 3D pad press (6px translateY)
-- Tap baton = not always miss
-- Miss = lose 1 heart, 3 misses = game over
+## KEY FILES
+- app/src/services/MusicPlayer.ts — music sequencer (react-native-sound)
+- app/src/types/react-native-sound.d.ts — local TS type declaration
+- app/src/screens/GameScreen.tsx — calls musicPlayer.start/stop
+- app/src/engine/GameEngine.ts — hit detection, lives
+- app/src/constants/game.ts — speed curves, level gates
+- app/src/components/FallingBaton.tsx — animated baton
+- app/src/components/HangingRow.tsx — hanging batons (bottom-half clip)
+- app/build-phone.ps1 — phone build script
 
-## WHAT COMES NEXT
-- Confirm game works on emulator
-- Special batons (skull/star)
-- Replace placeholder sprites with Nano Banana 2 assets
-- AdMob integration
-- Play Store pipeline
+## KEY DECISIONS
+- react-native-sound over RNTP: bridge-compat with newArchEnabled=true
+- MP3s in res/raw/ not assets/: Sound.MAIN_BUNDLE only works with res/raw on RN 0.85
+- No @types package: use local declaration file
+- Infinite loop guard: playTrack(index, skipped) bails if skipped >= track count
+
+## HOW TO BUILD FOR PHONE
+cd "D:\AI Work\Mobile-Games\games\batondrop\app"
+.\build-phone.ps1
+Unplug phone before opening app.
+
+## EMULATOR BUILD
+Window 1: cd app && npx react-native start --reset-cache
+Window 2: set JAVA_HOME to Android Studio jbr, cd app\android, .\gradlew.bat app:installDebug
+
+## CRITICAL: PHYSICAL DEVICE + NEW ARCHITECTURE
+Images do NOT load via Metro on physical device. Must use build-phone.ps1 (bundled APK). Unplug before opening.
+
+## GAME DESIGN QUICK REFERENCE
+- 4 lanes L1-10, 5 lanes L11-25, 6 lanes L26+
+- Level gate: 4+level hits (5 for L1, 6 for L2...)
+- Speed: exponential decay 0.878 fall, 0.88 spawn
+- 3 lives, combo, fever at 20 consecutive hits
+- 7 baton types: Standard, Speed, Slow, Skull (no tap), Ghost, Bounce, Chain
+- PERFECT +-80ms, GOOD +-150ms, OK +-200ms, outside = combo break only, exit = life lost
+
+## OTHER PROJECTS
+- CTRL: personal business OS, local React+Node app, actively built
+- CTRLPro: hospitality SaaS, planning phase
+- BedBouncer: ESP32 smart alarm, Kickstarter prep
+- ChessMusic/WordDrop: concept phase
