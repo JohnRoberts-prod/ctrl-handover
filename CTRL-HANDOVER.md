@@ -1,173 +1,196 @@
-# BatonDrop Project Handover
-*Last updated: 2026-04-28 UTC*
-*Session ended: Design upgrade — background image wired in, emulator grey screen issue, PC rebooting*
+# CTRL Project Handover
+*Last updated: 2026-04-30 — end of BatonDrop + CTRLplay website session*
+*Session ended: Completed CTRLplay website content rewrite — all four HTML files corrected for factual accuracy*
 
 ---
 
 ## HOW TO USE THIS DOCUMENT
 
-You are Claude web browser picking up a BatonDrop development session.
-John Roberts is the developer. Read this entire document before responding.
+You are Claude web browser picking up a development session for John Roberts.
+John Roberts is a solo developer building mobile games (BatonDrop) and the CTRL personal OS.
+Read this entire document before responding.
 
-App location: `D:\AI Work\Mobile-Games\games\batondrop\app\`
-Stack: React Native 0.85.2 + TypeScript, Android
-New Architecture enabled: newArchEnabled=true
-GitHub: https://github.com/JohnRoberts-prod/ctrl-batondrop (commit 8ddc1e0)
+Primary game project: D:\AI Work\Mobile-Games\games\batondrop
+App source: D:\AI Work\Mobile-Games\games\batondrop\app\src
+CTRLplay website: D:\AI Work\Mobile-Games\CTRLplay website
+
+CTRL codebase (separate system): D:\AI Work\Control-Centre
+Backend: Node.js + Express + TypeScript on port 3001
+Frontend: React 18 + Vite + TypeScript on port 5173
+Database: SQLite at D:\AI Work\.ctrl-data.db
 
 ---
 
 ## WHAT WE WERE BUILDING THIS SESSION
 
-BatonDrop visual/design upgrade. Target: make the game look like a mockup collage at
-`D:\AI Work\Mobile-Games\games\batondrop\brand\assets\hero-images\WhatsApp Image 2026-04-15 at 18.56.25.jpeg`
-(4-screen collage showing atmospheric stone runway, glowing batons, green buttons, game over screen).
+This was a BatonDrop mobile game + CTRLplay website session covering ten distinct areas.
+The final task (completed) was rewriting all CTRLplay website content to be factually accurate.
+The original site had wrong baton descriptions, listed ChessMusic as a CTRLplay game, referenced a
+leaderboard that does not exist yet, and showed a wrong Founded year.
 
-We redesigned the HUD, wired in an atmospheric background image, fixed baton z-order so they
-appear behind the top bar, added bestScore tracking, and redesigned the idle screen START button.
-Session ended while troubleshooting an Android emulator grey screen — PC was rebooting to fix it.
-
----
-
-## CURRENT BUILD STATE
-
-### Completed this session
-- `src/components/HUD.tsx` — Full rewrite: 3-column layout (SCORE left / LVL centre / BEST right),
-  level modifier text (QUICK/FAST!/BLAZING!/INSANE! based on level), thick 20pt glowing amber
-  progress bar with shine + leading edge glow, lives hearts in right column, bestScore prop
-- `src/components/HangingRow.tsx` — Removed overflow:hidden clip, slot full BATON_H (200pt),
-  spriteWrapper.top=0, batons hang 35% behind the HUD bar (bar masks their tops)
-- `src/screens/GameScreen.tsx` — ImageBackground wraps all three states (idle/playing/gameover),
-  bestScore state added + updated on hits and game_over, hangingTop = hudHeight - 70pt,
-  HangingRow renders BEFORE HUD in JSX (z-order fix), idle screen has large blue START button
-  pinned to bottom
-- `src/screens/GameOverScreen.tsx` — Container background rgba(0,0,0,0.55), atmosphere shows through
-- `src/assets/backgrounds/background.png` — NEW atmospheric stone cobblestone runway image
-
-### NOT YET TESTED
-Everything above is committed and pushed but NOT visually tested — emulator was broken.
-
-### Pending next steps (in order)
-1. Confirm emulator boots after PC reboot (see emulator fix below)
-2. `cd app && npx react-native start --reset-cache`
-3. `npx react-native run-android` or `adb reverse tcp:8081 tcp:8081` then open app
-4. Visually test: background, HUD layout, baton-behind-bar effect, progress bar, START button
-5. Redesign Game Over screen to match mockup (RETRY|MENU green buttons side by side, dark WATCH AD button)
-6. Generate remaining UI assets in Nano Banana 2: coin icon, settings gear, sound on/off, pause, home
-7. Wire coin icon into HUD and game over screen
+Before the website work, the session fixed several game bugs: a swap baton double-offset visual bug,
+a freeze+swap crash, the react-native-sound Android audio path (res/raw/ not assets/), and added a
+level selector to the debug modal.
 
 ---
 
-## EMULATOR FIX (grey screen issue)
+## COMPLETED THIS SESSION
 
-**Problem:** Pixel_7 emulator shows grey screen, never boots Android.
-**Fix applied this session:**
-Edited `C:\Users\admin\.android\avd\Pixel_7.avd\config.ini`:
-- `hw.gpu.mode=swiftshader_indirect` (was: auto) — pure software rendering, bypasses GPU
-- `fastboot.forceColdBoot=yes` (was: no) — forces cold boot, ignores corrupted snapshot
-PC was rebooted.
+### BatonDrop App
 
-**After reboot, start emulator with:**
-```
-"C:\Users\admin\AppData\Local\Android\Sdk\emulator\emulator.exe" -avd Pixel_7 -no-snapshot-load
-```
+- Music: Removed 3 old track references (brain_dance, cloud_dancer, equatorial_complex). Single track: defaultsound. Cleaned from MusicPlayer, ThemeContext, themes.ts, OptionsScreen.
+- Audio fix: defaultsound.mp3 copied to android/app/src/main/res/raw/ (react-native-sound with null basePath reads res/raw/ via getIdentifier(), NOT assets/ on Android)
+- build-phone.ps1: Fixed to not delete .mp3 files from res/raw/ during clean step
+- Level selector: Added startLevel stepper (down/up arrows, default 1, max 30) to DebugOptionsModal. Field added to DebugConfig type and LevelSystem.initialLevelState().
+- Swap baton fix: handleSwap in GameScreen no longer calls setActiveBaton. This was causing laneX prop to change mid-animation causing double-offset. Fix: only call engine.updateBatonLane + setFallingLanes.
+- Freeze+swap fix: pickDifferentLane() now takes forbidden[] list. When freeze is active, forbidden = all lanes except frozen lane. Falls back to same lane if no candidates. Also fixed hardcoded boxCount bug in BatonSpawner normal mode.
+- Persistence contract: Added PERSISTENCE_CONTRACT.md. HMAC mismatch now recovers value instead of resetting coins to 0. Storage keys marked with warning comments.
+- FallingBaton swap animation: Corrected to proper 3-phase (fall to pause point, slide X, resume to arrivalY, then exit). isSwap guard checks swapToBoxIndex !== targetBoxIndex so same-lane fallback runs as standard baton.
 
-If still grey after reboot: delete the AVD in Android Studio Device Manager and recreate
-with a new x86_64 Google APIs system image (API 33 or 34).
+### CTRLplay Website — D:\AI Work\Mobile-Games\CTRLplay website
+
+- index.html: Removed ChessMusic card entirely. Catalogue 03 to 02. Three games to Two games. WordDrop badge In dev to Soon, button Early stage to Coming soon, index 03 to 02. BatonDrop description fixed (removed "in sequence"). Founded 2025 to 2026.
+- games/batondrop.html: Corrected 6 wrong baton descriptions:
+  - Ghost: "phases between lanes" was wrong. Now: fades to invisible before catch zone.
+  - Bouncer: "hits a wall, jumps lanes" was wrong. Now: falls, bounces above pads, springs up, drops through catch zone. Tapping early is a miss.
+  - Fast Forward: "next batons inherit tempo" was wrong. Now: this baton falls at 1.5x speed only.
+  - Slow Motion: "clear a backlog" was misleading. Now: falls at half speed, gift baton.
+  - Swap: "pads rearrange, lane 1 where lane 4 was" was wrong. Now: slides sideways to new lane mid-fall. Tap where it ends up.
+  - Double: "two batons fall together" was wrong. Now: catch it for 2x score on this hit.
+  - Magnet: "pulls toward last-tapped lane" was wrong. Now: upgrades hit quality (ok becomes good, good becomes perfect).
+  - Freeze: "baton freezes mid-air, tap when it thaws" was wrong. Now: catch it and next 5 drops all land in same lane.
+  - Spec Internet row: removed "global leaderboards" (not built yet)
+  - Spec Status: changed to "In development. Early release."
+- contact.html: Removed ChessMusic row. WordDrop In dev to Soon.
+- privacy.html: Removed ChessMusic from scope. Removed all leaderboard references (collection bullet, use bullet, Supabase row, retention paragraph, delete rights clause).
+
+---
+
+## IN PROGRESS
+
+Nothing. Session ended cleanly after website content rewrite.
+
+---
+
+## NEXT STEPS FOR BATONDROP
+
+1. Verify CTRLplay website in browser — check 2-game grid layout on index.html looks correct
+2. HowToPlayScreen on device — verify batons render at 54x200 with resizeMode=cover (was unconfirmed from previous session)
+3. Full QA pass across all screens
+4. First Play Store internal test build
+5. Google Play store listing + privacy policy URL (must match website URL)
+6. Global leaderboard — discussed but not built. Requires backend (Supabase), score submission API, leaderboard UI in GameOverScreen.
+
+---
+
+## KEY TECHNICAL FACTS — BATONDROP
+
+Stack: React Native 0.85 + React 19 + TypeScript strict + react-native-reanimated 4.x
+
+react-native-sound Android: null basePath reads from res/raw/ via getIdentifier(). File must be at android/app/src/main/res/raw/[name].mp3. The assets/ folder does NOT work with null basePath.
+
+Swap baton animation rule: laneX prop is captured at mount for translateX delta. NEVER update activeBaton.targetBoxIndex in GameScreen — it changes laneX prop mid-animation, double-offsetting the baton. Only call engine.updateBatonLane() and setFallingLanes() in handleSwap.
+
+Freeze+swap: buildBaton(level, targetBoxIndex, frozenLane) passes frozenLane through to pickDifferentLane(exclude, boxCount, forbidden). If frozen, forbidden = all lanes except frozenLane. Falls back to same lane if no valid candidates (no visible swap).
+
+Persistence contract: Storage keys in SaveService, SettingsService, ThemeStore, ProgressionService are FROZEN. Never rename them — player data will be lost on update. See PERSISTENCE_CONTRACT.md in app root.
+
+HMAC mismatch recovery: IntegrityService.getCoinBalance() recovers the raw stored value and re-signs it on keychain loss. Does NOT reset to 0.
+
+Baton fall speeds (L1 base 2000ms):
+- Standard: 2000ms
+- Fast Forward: Math.round(baseFall / 1.5) = approximately 1333ms
+- Slow Motion: Math.round(baseFall * 2) = 4000ms
+
+Special baton pools:
+- Common (all levels): ghost, bomb, fast_forward, slow_motion, bouncer
+- Regular (level 10+): swap, double, magnet, shrink, freeze
+- Rare (level 20+): mirror, blind
+
+Box count per level: 2 boxes at L1-4, 3 at L5-9, 4 at L10+
+
+---
+
+## CTRL SYSTEM STATE (separate from BatonDrop)
+
+CTRL is John's personal business OS — React + Express + SQLite, runs locally on port 5173/3001.
+Status as of last CTRL session (26 April 2026):
+
+Project Spine COMPLETE (phases 1-5). All DB migrations applied (24-27).
+ProjectSelector wired into Projects, Finance, GitHub tabs.
+Phase 6 (browser verify + remaining tab wiring) still pending.
+
+Tabs working: Gmail, Claude terminal, Home (basic), Finance (basic), Trading (Alpaca live), Projects (spine)
+Tabs pending wire-up: Knowledge, CRM, Brand Toolkit, Cloudflare
 
 ---
 
 ## FILES MODIFIED THIS SESSION
 
-```
-app/src/components/HUD.tsx              — Full rewrite, new layout, thick progress bar, bestScore prop
-app/src/components/HangingRow.tsx       — Removed clip, full baton height, z-order fix
-app/src/screens/GameScreen.tsx          — ImageBackground, bestScore, hangingTop, idle START button
-app/src/screens/GameOverScreen.tsx      — Transparent background rgba(0,0,0,0.55)
-app/src/assets/backgrounds/background.png — NEW background image
-D:\AI Work\Mobile-Games\SESSION_STATE.md — Updated
-D:\AI Work\Mobile-Games\LEARNINGS.md    — 6 new entries
-```
+BatonDrop app:
+- app/src/services/MusicPlayer.ts — DEFAULT_TRACKS to defaultsound only, removed TRACK_DISPLAY_NAMES export
+- app/src/contexts/ThemeContext.tsx — fallback musicTracks: defaultsound
+- app/src/config/themes.ts — MUSIC_ASSETS.default: defaultsound
+- app/src/screens/OptionsScreen.tsx — removed entire MUSIC TRACK section and all related styles
+- android/app/src/main/res/raw/defaultsound.mp3 — NEW: copied from assets/ for react-native-sound
+- app/build-phone.ps1 — fixed raw dir clean to preserve .mp3 files
+- app/src/types/index.ts — added startLevel: number to DebugConfig
+- app/src/engine/LevelSystem.ts — initialLevelState(level = 1) accepts optional start level
+- app/src/engine/GameEngine.ts — uses debugConfig?.startLevel ?? 1; loadLane passes frozenLane
+- app/src/screens/GameScreen.tsx — handleSwap removed setActiveBaton call; startGame uses startLevel
+- app/src/components/DebugOptionsModal.tsx — added startLevel stepper (arrows, 1-30)
+- app/src/components/FallingBaton.tsx — swap animation corrected (3-phase); isSwap guard added
+- app/src/engine/BatonSpawner.ts — pickDifferentLane with forbidden[]; boxCountForLevel(level) throughout; frozenLane param
+- app/src/security/IntegrityService.ts — HMAC mismatch recovers value, re-signs (not reset to 0)
+- app/PERSISTENCE_CONTRACT.md — NEW: documents all frozen storage keys
+
+CTRLplay website:
+- CTRLplay website/index.html — removed ChessMusic, fixed counts, WordDrop status, Founded year
+- CTRLplay website/games/batondrop.html — corrected 6 baton descriptions, fixed spec table
+- CTRLplay website/contact.html — removed ChessMusic, WordDrop status fix
+- CTRLplay website/privacy.html — removed ChessMusic, removed all leaderboard references
 
 ---
 
-## ASSET STATUS
+## OPEN ISSUES
 
-| Asset | Status | Notes |
-|-------|--------|-------|
-| Baton sprites (6 colours) | Done | app/src/assets/batons/ |
-| Special effect icons (9) | Done, live on pads | app/src/assets/effects/ |
-| Background image | Done, wired in, UNTESTED | app/src/assets/backgrounds/background.png |
-| Coin icon | Not generated yet | Nano Banana 2 prompt written |
-| Settings/gear icon | Not generated yet | Nano Banana 2 prompt written |
-| Sound on/off icons | Not generated yet | — |
-| Pause icon | Not generated yet | — |
-| Home icon | Not generated yet | — |
+- HowToPlayScreen baton rendering — resizeMode=cover fix applied but not confirmed on device
+- Global leaderboard — discussed but not built (no backend, no UI)
+- Google Play listing not created yet — website is ready, Play Store alpha track is next step
+- ChessMusic CSS variables still in batondrop.html and index.html (dead code, harmless)
 
 ---
 
-## DESIGN DECISIONS MADE
+## KEY DECISIONS MADE THIS SESSION
 
-- Level complete screens: NOT being built — levels are continuous, no interruption
-- Background: Gothic stone cobblestone runway, amber torches, purple/blue atmospheric glow
-- Buttons: Blue for START, GREEN for RETRY/MENU/CONTINUE (matching mockup). Amber phased out.
-- Game Over screen: needs redesign — RETRY|MENU side by side green, WATCH AD dark full-width
-- bestScore: in-session only (no AsyncStorage persistence yet)
-- Effect icons: live on tap pads. When a special baton is incoming, icon shows on that pad.
-
----
-
-## NANO BANANA 2 PROMPTS WRITTEN (not yet generated)
-
-Coin icon prompt (for economy display):
-```
-STYLE: Glossy 3D arcade coin, premium cartoonish
-SUBJECT: Single gold coin face-on, slight 3D tilt. Bold star embossed centre. Strong highlight.
-DIMENSIONS: 256x256 transparent PNG
-COLOUR PALETTE: Rich gold #FFD700, bright highlight #FFFACD, dark rim #B8860B
-NOTES: Floating coin only, transparent background. Readable at 24x24pt.
-AVOID: Background, shadow below, text on face, photo style
-```
-
-Settings gear, sound on/off, pause, home — all: white 3D embossed, glossy, transparent bg, 256x256.
+- react-native-sound: use res/raw/ on Android, not assets/ — confirmed by tracing Android Kotlin source
+- Swap baton: never update laneX-contributing props mid-animation (no setActiveBaton in handleSwap)
+- Freeze+swap: forbidden lane list passed to pickDifferentLane — cleaner than changing engine freeze logic
+- HMAC recovery: always recover + re-sign on keychain loss, never default to 0
+- CTRLplay website: ChessMusic is NOT a CTRLplay game — removed from all pages
+- Leaderboard: not built yet — removed from all marketing and privacy copy until actually shipped
 
 ---
 
-## GAME ARCHITECTURE QUICK REFERENCE
+## HOW TO START THE SYSTEMS
 
-- Hit detection: position-based via FallingBaton forwardRef, quality from visual Y vs boxCenterY
-- PERFECT +-80ms, GOOD +-150ms, OK +-200ms, outside = combo break only, miss = baton exits screen
-- Speed: `dropDurMs = difficulty.dropDurationMs / speedMultiplier` (DIVIDE not multiply)
-- Lanes: 4 at L1-10, 5 at L11-25, 6 at L26+
-- Level gate: 4+level hits to advance
-- Speed decay: 0.878 fall duration, 0.88 spawn interval (exponential, Tetris-like)
-- Music: react-native-sound 0.13.0, MP3s in android/app/src/main/res/raw/
-- Baton BATON_H=200pt, BATON_W=54pt
-- HUD bar height approx 100-120pt, batons hang 35% (70pt) behind it
-- Images on physical device: MUST use bundled APK (build-phone.ps1), not Metro
+BatonDrop (React Native):
+  cd D:\AI Work\Mobile-Games\games\batondrop\app
+  npx react-native start   (Metro bundler)
+  In another terminal: cd android && ./gradlew app:installDebug
 
----
+Phone build (physical device connected via USB):
+  cd D:\AI Work\Mobile-Games\games\batondrop\app
+  powershell -ExecutionPolicy Bypass -File build-phone.ps1
 
-## HOW TO BUILD
-
-**Emulator:**
-1. Start emulator (see command above)
-2. `cd "D:\AI Work\Mobile-Games\games\batondrop\app"`
-3. `npx react-native start --reset-cache`
-4. In another terminal: `npx react-native run-android`
-5. After any Metro restart: `adb reverse tcp:8081 tcp:8081`
-
-**Physical Pixel 8 Pro (ID: 38011FDJG00520):**
-```
-cd "D:\AI Work\Mobile-Games\games\batondrop\app"
-.\build-phone.ps1
-```
-Unplug phone BEFORE opening app.
+CTRL system:
+  D:\AI Work\START-ALL.bat
 
 ---
 
-## ALL PROJECTS (context)
+## OTHER PROJECTS (for full context)
 
-- **CTRL** — Personal business OS, React+Node+SQLite local web app. Project Spine phases 1-5 done.
-- **CTRLPro** — Hospitality SaaS, planning phase, no build yet, first client conversation needed.
-- **BedBouncer** — ESP32 smart alarm, Kickstarter prep, needs product video.
-- **BatonDrop** — THIS PROJECT. Tap-timing mobile game. Mechanics solid, design upgrade in progress.
+- CTRLplay — game studio brand. Website at D:\AI Work\Mobile-Games\CTRLplay website. BatonDrop is live (alpha), WordDrop coming soon.
+- CTRL — personal business OS. Active build. Last session: Project Spine complete, remaining tab wiring pending.
+- CTRLPro — hospitality SaaS. Planning phase. One potential first client.
+- BedBouncer — smart alarm Kickstarter. Working prototype exists. Needs product video to relaunch.
