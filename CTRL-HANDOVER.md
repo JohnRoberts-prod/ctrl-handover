@@ -1,0 +1,1 @@
+BatonDrop Handover 2026-05-03. Lane scaling fix v1.5. Leaderboard bug under investigation. See SESSION_STATE.md in the app folder.
