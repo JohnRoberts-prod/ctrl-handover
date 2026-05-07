@@ -1,109 +1,121 @@
-﻿# CTRL Project Handover
-Last updated: 2026-05-04 UTC
-Session ended: BedBouncer hardware -- FSR + buzzer confirmed working, alarm test pending
-
----
+﻿# Cavernborn — Game Dev Handover
+Last updated: 2026-05-07 UTC
+Session ended: Resolved Skia v2 font loading blocker. Rewrote GameText.tsx with react-native-svg. Rebuild pending.
 
 ## HOW TO USE THIS DOCUMENT
 
-You are Claude web browser picking up a CTRL development session.
+You are picking up a Cavernborn mobile game development session.
 John Roberts is the developer. Read this entire document before responding.
 
-CTRL codebase: D:\AI Work\Control-Centre\
-Backend: Node.js + Express + TypeScript on port 3001
-Frontend: React 18 + Vite + TypeScript on port 5173
-Database: SQLite at D:\AI Work\.ctrl-data.db
-
----
+Project: Cavernborn — Dark fantasy idle RPG for Android (iOS later)
+Studio: CTRL Play (ctrlplay.games)
+Tech: React Native 0.85.3 + TypeScript + @shopify/react-native-skia + react-native-reanimated + react-native-svg
+App folder: D:\AI Work\Mobile-Games\games\Cavernborn\app\
+Skill file: D:\AI Work\Mobile-Games\games\Cavernborn\skills\skill-cavernborn.md
 
 ## WHAT WE WERE BUILDING THIS SESSION
 
-Three areas covered:
+Continued resolving the Skia v2 custom font loading blocker from last session.
+Ran logcat diagnostic that confirmed root cause: Skia.Data.fromBytes() works (skData: OK)
+but Skia.Typeface.MakeFreeTypeFaceFromData(skData) returns NULL — a Skia v2.6.2 Android bug.
+Tried a 5th approach (copy font to document dir + file URI) which also failed at the same step.
+Final fix: rewrote GameText.tsx to use react-native-svg instead of Skia for text rendering.
+react-native-svg was installed. The app has NOT yet been rebuilt with the new code.
 
-1. BedBouncer hardware prototype -- wired FSR pressure sensor (GPIO32, 10k resistor) and active buzzer (GPIO25). Both confirmed working. Full firmware with alarm logic, re-trigger window, web API uploaded and running on ESP32.
+## CURRENT BUILD STATE
 
-2. BedBouncer website CSP -- restored security header tightening. Extracted all JS to site.js, converted 18 inline onclick handlers to addEventListener, removed unsafe-inline from script-src, redeployed both Cloudflare workers.
+### Resolved this session
+- Root cause confirmed: MakeFreeTypeFaceFromData returns NULL on Skia v2.6.2 Android (FreeType bug)
+- GameText.tsx completely rewritten using react-native-svg (Svg + SvgText components)
+- react-native-svg installed
+- LEARNINGS.md, SESSION_STATE.md, skill-cavernborn.md all updated
 
-3. BedBouncer marketing -- rewrote all 25 image prompts with problem/solution strategy: 10 no-clock posts (problem/intrigue), 9 with-clock posts (solution/aspirational), 4 stat cards, 2 bouncer character posts.
+### In progress right now
+GameText.tsx rewritten but NOT rebuilt or tested.
+User needs to run: npx react-native run-android from the app\ directory.
+Then check logcat for absence of [GameText] errors and gold numbers on screen.
 
----
+### Pending next steps
+1. Rebuild and test with react-native-svg
+2. Verify fontFamily names match: FredokaOne-Regular, Cinzel-Bold
+3. Phase 2: Navigation + HomeScreen + CurrencyBar
 
-## BEDBOUNCER HARDWARE -- CONFIRMED CONFIG
+## THE SKIA FONT PROBLEM — FULL HISTORY
 
-FSR pin: GPIO32 (GPIO34 was DEAD on this board -- do not suggest it)
-Buzzer pin: GPIO25 -- active buzzer, use digitalWrite HIGH/LOW NOT ledcWrite
-10k resistor: pulldown from GPIO32 to GND. FSR between 3.3V and GPIO32.
-FSR readings: idle=0, hand press=1300-1700. Threshold=400.
-Buzzer volume quiet at 3.3V -- production needs 5V via transistor.
+Five approaches tried, all failed:
+1. require() — Image.resolveAssetSource returns invalid URI for TTF files
+2. { uri: 'file:///android_asset/fonts/...' } — Skia.Data.fromURI rejects android_asset scheme
+3. fetch('file:///android_asset/...') — OkHttp does not support android_asset URIs
+4. RNFS.readFileAssets + Uint8Array — bytes load correctly (305871/305836) but MakeFreeTypeFaceFromData returns NULL
+5. RNFS.copyFileAssets to doc dir + file:// URI — same MakeFreeTypeFaceFromData NULL
 
----
+Diagnostic confirmed: skData OK, typeface NULL. FreeType inside Skia v2.6.2 rejects the data.
 
-## BEDBOUNCER FIRMWARE -- API
+FIX: react-native-svg uses Android platform font system.
+Fonts in android/app/src/main/assets/fonts/ auto-register with Android TypeFace on app start.
+fontFamily prop matches TTF filename without extension: FredokaOne-Regular, Cinzel-Bold.
 
-ESP32 runs web server. Get IP from OLED on boot.
-GET  http://[IP]/status   -- returns time, alarm config, alarmActive, personInBed, fsr raw value
-POST http://[IP]/alarm    -- body: {"hour":7,"minute":30,"enabled":true}
+## GAMETEXT.TSX — NEW IMPLEMENTATION
 
-To test alarm in PowerShell (replace IP and set minute 1 ahead of current time):
-Invoke-RestMethod -Uri "http://192.168.1.70/alarm" -Method POST -ContentType "application/json" -Body '{"hour":22,"minute":15,"enabled":true}'
+File: app/src/components/GameText.tsx
+Uses Svg + SvgText from react-native-svg (NOT Skia Text).
+Two SvgText layers: stroke layer (fill=none, strokeWidth=sw*2) then fill layer (stroke=none).
+fontFamily: 'FredokaOne-Regular' or 'Cinzel-Bold' (matches filename without .ttf).
+estimateWidth: text.length * size * 0.62 heuristic.
+centered prop uses textAnchor='middle' and tx = w/2.
 
----
+## PHASE 1 BUILD STATUS
 
-## NEXT STEPS IN ORDER
+- src/components/GameText.tsx — REWRITTEN with SVG, UNTESTED on device
+- src/components/FloatingNumber.tsx — built (wraps GameText in Animated.View)
+- src/components/TreasureChest.tsx — working (Skia placeholder visuals)
+- src/components/CaveCanvas.tsx — working (Skia geometry, placeholder tiles)
+- src/components/HeroSprite.tsx — working (Skia coloured circles, bob animation)
+- src/hooks/useAFKRewards.ts — built, needs runtime test
+- src/screens/AFKScreen.tsx — built, assembles all components
+- App.tsx — wired to AFKScreen
+- android/app/src/main/assets/fonts/ — FredokaOne-Regular.ttf + Cinzel-Bold.ttf (DO NOT MOVE)
+- android/app/src/main/AndroidManifest.xml — AdMob test ID configured with tools:replace
 
-1. Alarm test: POST /alarm 1 min ahead, press FSR, verify buzzer+OLED fires, release to dismiss, re-press within 10 min to test re-trigger
-2. Real-weight test: slide FSR under mattress, confirm inBed:YES through bedding, tune threshold if needed (currently 400)
-3. Generate 25 social media images using Design tab (prompts at D:\AI Work\BedBouncer\knowledge\design-image-prompts.md)
-4. Write June + July campaign posts (PART2 and PART3)
-5. Write email sequence (8 pre-launch emails)
-6. Write paid ad copy (Meta, TikTok, Reddit)
+## KEY PACKAGES
 
----
+@shopify/react-native-skia@2.6.2 — Canvas geometry (CaveCanvas, TreasureChest, HeroSprite)
+react-native-svg — text rendering (GameText, FloatingNumber)
+react-native-reanimated@4.3.0 — animations
+react-native-worklets — required separately alongside Reanimated v4
+react-native-fs — still installed (was used for font loading attempts)
+react-native-encrypted-storage — offline timestamp (useAFKRewards)
+react-native-purchases — RevenueCat IAP (installed, not yet wired)
+react-native-google-mobile-ads — AdMob (App ID configured)
+@react-navigation/* — navigation (installed, not yet used)
+@reduxjs/toolkit react-redux — state management (installed, not yet used)
 
-## FILES MODIFIED THIS SESSION
+## ANDROID BUILD GOTCHAS
 
-D:\AI Work\BedBouncer\firmware\BedBouncer\src\main.cpp -- full firmware, FSR GPIO32, active buzzer GPIO25
-D:\AI Work\BedBouncer\site.js -- new file: all JS extracted from index.html
-D:\AI Work\BedBouncer\index.html -- removed 18 onclick=, replaced inline script with site.js reference
-D:\AI Work\BedBouncer\security-worker\index.js -- removed unsafe-inline from script-src
-D:\AI Work\BedBouncer\knowledge\design-image-prompts.md -- complete rewrite, 25 prompts, problem/solution split
-D:\AI Work\Control-Centre\src\frontend\src\core\Sidebar.tsx -- added bed-bouncer to Build group
-D:\AI Work\Control-Centre\src\frontend\src\core\nav.config.ts -- added BedDouble icon and nav item
-D:\AI Work\Control-Centre\src\frontend\src\core\AppShell.tsx -- added BedBouncer module render
-D:\AI Work\.ctrl-config.json -- added bedbouncer.deviceIp
+1. AdMob crashes without APPLICATION_ID — already fixed in AndroidManifest.xml
+   Test App ID: ca-app-pub-3940256099942544~3347511713
 
----
+2. Reanimated v4 needs react-native-worklets separately — already installed
 
-## OPEN ISSUES
+3. Emulator stale lock:
+   Stop-Process -Name "qemu-system-x86_64" -Force -ErrorAction SilentlyContinue
+   Remove-Item "$env:USERPROFILE\.android\avd\Pixel_7.avd\*.lock" -Force
 
-- FSR threshold 400 confirmed for hand press only -- not yet tested under mattress + bedding
-- Active buzzer quiet at 3.3V GPIO -- production needs 5V via NPN transistor
-- GPIO34 dead on this ESP32 board -- do not use it, GPIO32 is the FSR pin
-- Alarm end-to-end test not completed
+4. Fonts for SVG fontFamily must be in android/app/src/main/assets/fonts/ — already there
 
----
+## DESIGN
 
-## KEY DECISIONS
+bg: #0D0A1A | bg2: #1A1230 | gold: #C8A030 | goldBright: #FFD700
+Rarity: common #8A8A8A | uncommon #27AE60 | rare #4A90D9 | epic #9B59B6 | legendary #FFD700 | mythic #FF4444
+Fonts: FredokaOne-Regular (numbers) | Cinzel-Bold (hero/boss names)
 
-- GPIO32 for FSR (GPIO34 unresponsive -- always test ADC pins with 3.3V before trusting pinout diagrams)
-- Active buzzer: digitalWrite HIGH/LOW not ledcWrite
-- Image strategy: no-clock posts for reach (problem), with-clock posts for conversion (solution), ratio 7:3 in May
-- CSP: unsafe-inline blocks both script blocks AND onclick= handlers -- must extract ALL JS before removing it
+OP formula: (ATK*2.5)+(INT*2.5)+(DEX*2.0)+(DEF*1.5)+(HP*0.5)+(LUCK*1.0)+bonuses
+Gold per hit = OP * 0.002 | Scrolls: 1 per 10 hits | Offline cap: 12 hours
 
----
+## HOW TO RUN
 
-## HOW TO START CTRL
+cd D:\AI Work\Mobile-Games\games\Cavernborn\app
+npx react-native run-android
 
-D:\AI Work\START-ALL.bat
-
-Or manually:
-Backend:  cd "D:\AI Work\Control-Centre" && npm run dev:backend
-Frontend: cd "D:\AI Work\Control-Centre" && npm run dev:frontend
-
----
-
-## OTHER PROJECTS
-
-BedBouncer -- ESP32 smart alarm, hardware prototype working, Kickstarter prep in progress
-CTRLPro -- hospitality SaaS, planning phase, first client conversation pending
-Mobile Games -- planning phase, game concepts to be decided
+Logcat: & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" logcat -s ReactNativeJS
+Emulator: Pixel 7 AVD | ANDROID_HOME: C:\Users\admin\AppData\Local\Android\Sdk
