@@ -198,7 +198,7 @@ Existing sites without these fields work unchanged (TypeScript optional).
 
 5. **The user prefers terse, actionable responses** — no preamble, no postamble. Tell him what to do, not what you're going to do.
 
-6. **Lane7 hard line** — user works at Lane7. CTRLPro must NEVER be sold to or pitched to Lane7. No Lane7 data, contacts, or operational knowledge used for commercial purposes outside Lane7. This is non-negotiable. See `D:\AI Work\CLAUDE.md`.
+6. **Employer separation rule** — see `D:\AI Work\CLAUDE.md` for the full policy on keeping current-employer knowledge separate from CTRL/CTRLPro projects. Read it before any CTRLPro work.
 
 7. **Zero hardcoding rule** — every personal preference, path, credential, or name lives in config blob or vault, not in code. CTRL must be packageable as a product without refactoring.
 
@@ -219,7 +219,7 @@ Or manually:
 
 ## PROJECTS OUTSIDE CTRL (for full context)
 
-- **CTRLPro** — hospitality SaaS, planning phase, first client conversation pending. NEVER Lane7.
+- **CTRLPro** — hospitality SaaS, planning phase, first client conversation pending.
 - **BedBouncer** — ESP32 smart alarm, Kickstarter prep Spring 2026, website live at bedbouncer.com. Now has full GA4 event tracking ready for paid campaigns.
 - **CTRLPlay** — mobile games studio (Cavernborn, BatonDrop, WordDrop). Cavernborn = idle RPG, RN project not yet initialised. BatonDrop active build. WordDrop GDD complete.
 
