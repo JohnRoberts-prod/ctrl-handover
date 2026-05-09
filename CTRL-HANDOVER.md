@@ -1,225 +1,227 @@
 # CTRL Project Handover
-*Last updated: 2026-05-08 UTC*
-*Session ended: Massive dashboard design system rollout — Analytics + Finance restyled with dark/neon aesthetic, dashboard skill expanded into canonical metrics + archetype reference, Looker Studio embed permanently removed*
+*Last updated: 2026-05-09 (post-/afk)*
+*Session ended: BatonDrop v1.7 release AAB built and ready for closed-testing upload to Play Store. John uploads manually.*
 
 ---
 
 ## HOW TO USE THIS DOCUMENT
 
-You are Claude web browser picking up a CTRL development session.
-John Roberts is the developer. Read this entire document before responding.
+You are Claude web browser picking up John Roberts' work-in-progress.
+Read this entire document before responding when John pastes his message.
 
-The CTRL codebase is at: `D:\AI Work\Control-Centre\`
-Backend: Node.js + Express + TypeScript on port 3001
-Frontend: React 18 + Vite + TypeScript on port 5173
-Terminal server: node-pty WebSocket server on port 3002
-Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db`
+**This session was NOT CTRL development** — it was BatonDrop (mobile game) bug-fix +
+release prep. The handover is structured around that. CTRL is a separate codebase that
+wasn't touched today.
+
+Repo locations:
+- BatonDrop (today's work): `D:\AI Work\Mobile-Games\games\batondrop\`
+- BatonDrop app (RN root): `D:\AI Work\Mobile-Games\games\batondrop\app\`
+- BatonDrop backend (Cloudflare Worker): `D:\AI Work\Mobile-Games\games\batondrop\backend\`
+- CTRL (untouched today): `D:\AI Work\Control-Centre\`
 
 ---
 
 ## WHAT WE WERE BUILDING THIS SESSION
 
-End-to-end dashboard design system for CTRL. Six threads:
+Three reported BatonDrop bugs:
+1. Google sign-in didn't work for new players — `signIn()` silently returning null
+2. AdMob full-screen ad close-X hidden behind the system bar on Android 15+
+3. HUD score "100" / "1,000" rendering as "10" / "100" (trailing digit clipped)
 
-1. **Created the Dashboard Design System skill** at `D:\AI Work\skills\skill-dashboard-design-system.md` — this is now the canonical reference for any dashboard work in CTRL, CTRLPro, BedBouncer or future products.
-2. **Rebuilt CTRL Analytics module** with the new dark/neon aesthetic (pure black canvas, hot pink filled active tabs, 36-56px hero KPIs, italic uppercase display headings, neon cyan/lime/orange chart palette).
-3. **Rebuilt Finance module** with the same aesthetic via append-only CSS overrides (KPI numbers scaled to 27px per user preference — 75% of analytics size).
-4. **Permanently removed Looker Studio iframe embed** — Report tab, ReportTab.tsx, lookerStudioUrl field on AnalyticsSite all deleted. Documented in skill that this is a permanent decision.
-5. **Resolved Google OAuth scope-insufficient errors** — diagnosed as Google Cloud Console issue (APIs not enabled + scopes not registered on consent screen), fixed by user.
-6. **Massively expanded the dashboard skill** with comprehensive metrics catalogue (PPC, GA4, SEO, email, social, ecommerce, CRM, finance, subscribers, mobile games, hospitality SaaS) and 14 dashboard archetype recipes.
+Root causes were independent. Fixed all three. Plus a full GCP OAuth setup that had
+never been done correctly (Android OAuth clients were missing, consent screen still in
+Testing). Then bumped to v1.7 / versionCode 9, added ProGuard rules so the release
+build doesn't strip the new sign-in flow, built a signed release AAB.
 
-Session ended just after John added the metrics catalogue work — frontend not yet restarted to verify final state visually.
+John is uploading the AAB to Play Store closed testing manually (he has 18 testers on
+that track). No production push yet — testers verify release-mode behaviour first.
 
 ---
 
 ## CURRENT BUILD STATE
 
 ### Recently completed (this session)
-- Added neon design tokens to `src/frontend/src/core/tokens.css` (additive — no existing tokens changed)
-- Full rewrite of `src/frontend/src/modules/analytics/analytics.css` (~900 lines) with dark/neon aesthetic
-- Full append override section in `src/frontend/src/modules/finance/finance.css` (~330 lines added at end)
-- Updated chart colours in `AnalyticsTab.tsx` (Users → pink, Sessions → cyan)
-- Updated chart colours in `SearchConsoleTab.tsx` (Clicks → lime, Impressions → amber)
-- Updated chart colours in `SubscribersTab.tsx` (replaced var(--blue) with var(--neon-pink))
-- Updated chart colours in `Finance OverviewTab.tsx` (line colours: lime/red, merchant: pink)
-- Live tab hero number now uses gradient text (white → pink) at 96px
-- `Manage Sites` button now shows "Manage" text next to gear icon (was bare gear)
-- Deleted `src/frontend/src/modules/analytics/tabs/ReportTab.tsx`
-- Removed `lookerStudioUrl` field from AnalyticsSite interface and SiteManager UI
-- Removed `report-frame*` CSS classes
-- Created `D:\AI Work\skills\skill-dashboard-design-system.md` — comprehensive skill
-- Skill now has 15 component patterns (was 8), full metrics catalogue (~280 metrics across 13 categories), and 14 dashboard archetype recipes
+
+**Code changes:**
+- `app/src/services/GoogleSignInService.ts` — `createAccount()` fallback for `noSavedCredentialFound` + diagnostic logging on failure
+- `app/src/components/HUD.tsx` — removed `adjustsFontSizeToFit` from `scoreText` (the actual cause)
+- `app/android/app/src/main/AndroidManifest.xml` — override AdMob `AdActivity` with `tools:replace="android:theme"` -> custom `AdActivityTheme`
+- `app/android/app/src/main/res/values/styles.xml` — fallback `AdActivityTheme` for API < 35
+- `app/android/app/src/main/res/values-v35/styles.xml` — `AdActivityTheme` and `AppTheme` with `android:windowOptOutEdgeToEdgeEnforcement="true"`
+- `app/android/app/proguard-rules.pro` — keep rules for `androidx.credentials.*`, `com.google.android.libraries.identity.googleid.*`, `com.reactnativegooglesignin.*`, `com.google.android.gms.auth.*`
+- `app/android/app/build.gradle` — versionCode 8 -> 9, versionName 1.6 -> 1.7
+
+**GCP setup (via Playwright in a debug Chrome instance):**
+- OAuth consent screen -> published to **Production** (was Testing — only test users could sign in)
+- Created 3 Android OAuth clients in project `ctrl-493720`:
+  - `BatonDrop Android (debug)` — SHA-1 `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25`
+  - `BatonDrop Android (upload)` — SHA-1 `D3:9B:4D:B5:5F:A4:8C:C7:EA:C1:78:5F:71:57:5A:2F:07:DB:62:29`
+  - `BatonDrop Android (Play App Signing)` — SHA-1 `8C:69:AC:CD:C6:CB:35:D4:2C:B6:6C:DF:4C:FF:9F:FF:5A:2F:C0:C2`
+
+**Release build:**
+- `gradlew bundleRelease` succeeded. AAB at:
+  `D:\AI Work\Mobile-Games\games\batondrop\app\android\app\build\outputs\bundle\release\app-release.aab`
+- 124 MB, signed with the release keystore.
+- John is uploading this manually to Play Console -> Closed testing.
 
 ### In progress right now
-- Finance and Analytics restyled but **frontend not yet restarted** — user needs to verify visually
-- Stages 1, 5, 6 of the dashboard rollout plan are complete; Stages 8-10 pending
-- Advanced chart components NOT yet built as React components (ScatterChart, Funnel, HalfGauge, HeatBarTableCell, ComboChart, WorldHeatMap, CardHeaderInline)
+- John is uploading the AAB to Play Store closed testing.
+- After testers confirm release-mode behaviour matches debug, he'll promote to Production
+  from inside the closed-testing track (one click in Play Console).
 
 ### Pending / next steps
-1. **User restart frontend** (`npm run dev` from src/frontend/) to verify visual state
-2. **Stage 8 — Advanced chart components**: build ScatterChart, Funnel (h+v variants), HalfGauge, HeatBarTableCell, ComboChart, WorldHeatMap, CardHeaderInline as reusable React components
-3. **Stage 9 — Build the archetype dashboards** in priority order:
-   - Pre-launch Waitlist (BedBouncer, partly done in SubscribersTab)
-   - Single-Platform Ad Performance (when paid campaigns launch)
-   - SEO Health Check (partly done in SearchConsoleTab)
-   - Cash Flow / AR-AP (partly done in Finance Overview)
-   - Mobile Game LiveOps (when CTRLPlay launches)
-4. Apply design system to remaining modules: Trading, Projects, Settings, Gmail, GitHub, Cloudflare, etc.
-5. Cloudflare DNS for bedbouncer.com → re-enable bedbouncer.co.uk redirect
-6. Build first BedBouncer Looker Studio report (user can build natively now using the new components when ready)
-
----
-
-## ALL MODULES — STATUS
-
-| Module | Location | Status | Notes |
-|--------|----------|--------|-------|
-| Analytics | src/frontend/src/modules/analytics/ | **REBUILT 2026-05-08** | Dark/neon aesthetic. 4 tabs: Analytics, Search Console, Live, Subscribers. Report tab deleted. |
-| Finance | src/frontend/src/modules/finance/ | **REBUILT 2026-05-08** | Dark/neon overrides via append. KPI numbers at 27px (75% scale per user). |
-| Settings | src/frontend/src/modules/settings/ | stable | Has Google OAuth reconnect flow |
-| Admin | src/frontend/src/modules/admin/ | stable | |
-| Trading | src/frontend/src/modules/trading/ | stable | Candidate for design system rollout |
-| Projects | src/frontend/src/modules/projects/ | stable | Candidate for design system rollout |
-| Game Shop | src/frontend/src/modules/game-shop/ | has pre-existing TS error | AddItemSection.tsx asset_version missing (not from this session) |
-| Cloudflare | src/frontend/src/modules/cloudflare/ | stable | |
-| Gmail | src/frontend/src/modules/gmail/ | stable | OAuth issue resolved this session |
-| GitHub | src/frontend/src/modules/github/ | stable | |
-| Brand Toolkit | src/frontend/src/modules/brand-toolkit/ | stable | |
+1. Verify release-mode sign-in / ads / scoring on the 18-tester closed track. ProGuard
+   rules should cover everything but this is the first release with the new sign-in
+   flow + AdActivity override.
+2. Promote v1.7 to Production via Play Console (after a day on closed testing).
+3. Verify `ctrlplay.co.uk/privacy` is reachable to Google's crawler. Older learning
+   flagged a 403 from Cloudflare Bot Fight Mode — must be fixed before any future
+   Production submissions Google reviews.
+4. Clean up bot/ghost player accounts on the leaderboard in Turso (pre-launch report
+   bots create fake players each upload).
+5. WordDrop dev (untouched today) — see Mobile-Games/SESSION_STATE.md for that backlog.
 
 ---
 
 ## FILES CREATED OR MODIFIED THIS SESSION
 
-### CTRL frontend
 ```
-src/frontend/src/core/tokens.css — APPENDED neon dashboard tokens (additive, no existing tokens changed)
-src/frontend/src/modules/analytics/Analytics.tsx — removed report tab + ReportTab import, added "Manage" text label
-src/frontend/src/modules/analytics/SiteManager.tsx — removed lookerStudioUrl field, updated EMPTY constant
-src/frontend/src/modules/analytics/analytics.css — FULL REWRITE (~900 lines) with dark/neon aesthetic
-src/frontend/src/modules/analytics/tabs/AnalyticsTab.tsx — chart colours updated (pink/cyan)
-src/frontend/src/modules/analytics/tabs/SearchConsoleTab.tsx — chart colours updated (lime/amber)
-src/frontend/src/modules/analytics/tabs/SubscribersTab.tsx — chart fill/stroke updated (pink)
-src/frontend/src/modules/analytics/tabs/ReportTab.tsx — DELETED
-src/frontend/src/modules/finance/finance.css — APPENDED ~330 line override section at end
-src/frontend/src/modules/finance/components/OverviewTab.tsx — chart line colours updated (lime/red/pink)
-src/frontend/src/services/analytics.service.ts — removed lookerStudioUrl from AnalyticsSite interface
-```
-
-### CTRL project memory
-```
-SESSION_STATE.md — overwritten
-LEARNINGS.md — appended 8 new learnings from this session
-```
-
-### Shared skills (D:\AI Work\skills\)
-```
-skill-dashboard-design-system.md — CREATED then MASSIVELY EXPANDED. Now contains:
-  - Core principles (7 rules)
-  - Design tokens (full :root CSS variable block)
-  - Typography patterns
-  - 15 component patterns (KpiCard, StatusPill, HeatBarList, Banner, TabNav, DataTable, Sparkline, FilterChip, InlineHeaderKpi, ScatterChart, Funnel-h, Funnel-v, HalfGauge, HeatBarTableCell, ComboChart, WorldHeatMap)
-  - Chart styling rules + 7-colour CHART_COLORS array
-  - METRICS CATALOGUE (~280 metrics across 13 categories with formulas, chart types, benchmarks)
-  - 14 DASHBOARD ARCHETYPES (pre-built configurations for common dashboards)
-  - Layout patterns
-  - React component shapes
-  - 10-stage rollout plan
-  - Do/Don't quick reference
-  - Looker Studio decision (permanent removal)
+app/src/services/GoogleSignInService.ts
+  - createAccount() fallback for noSavedCredentialFound (first-timer flow)
+  - console.warn on non-success / unexpected error so failures aren't silent
+app/src/components/HUD.tsx
+  - removed adjustsFontSizeToFit from scoreText (actual cause of trailing-zero clip)
+app/android/app/src/main/AndroidManifest.xml
+  - added <activity name="com.google.android.gms.ads.AdActivity"> with
+    tools:replace="android:theme" -> @style/AdActivityTheme
+app/android/app/src/main/res/values/styles.xml
+  - added AdActivityTheme extending @android:style/Theme.Translucent (no opt-out
+    attribute, fallback for API < 35)
+app/android/app/src/main/res/values-v35/styles.xml
+  - defined AdActivityTheme and AppTheme overrides with
+    android:windowOptOutEdgeToEdgeEnforcement="true"
+app/android/app/proguard-rules.pro
+  - added keeps: reactnativegooglesignin.*, androidx.credentials.*,
+    com.google.android.libraries.identity.googleid.*, gms.auth.*, gms.common.*
+app/android/app/build.gradle
+  - versionCode 8 -> 9, versionName "1.6" -> "1.7"
 ```
 
----
-
-## RECENT GIT COMMITS
-
-CTRL repo: not initialised as git locally — no commit history available.
-
-BedBouncer repo (from earlier sessions, no new commits this session):
+Knowledge files (auto-maintained):
 ```
-9e4b781 Add marketing analytics dashboard and enhanced GA4 event tracking
-03ce832 Migrate primary domain to bedbouncer.com, add SEO structured data and sitemap
-c3783ac Remove analytics dashboard from public site — belongs in CTRL
+D:\AI Work\Mobile-Games\SESSION_STATE.md           - overwritten with current state
+D:\AI Work\Mobile-Games\LEARNINGS.md               - appended 8 new entries (2026-05-09)
+D:\AI Work\Mobile-Games\skills\skill-google-signin-android.md  - NEW cross-game skill
+D:\AI Work\Mobile-Games\games\batondrop\skills\skill-batondrop-workflow.md
+                                                   - appended "v1.7 RELEASE FIXES" section
 ```
 
 ---
 
 ## OPEN ISSUES / KNOWN BUGS
 
-1. **Frontend not restarted** — User needs to run `npm run dev` from src/frontend/ to see all the design system changes rendered. TypeScript compiles cleanly (verified twice this session, excluding pre-existing game-shop error).
-
-2. **Pre-existing TS error** — `src/frontend/src/modules/game-shop/components/AddItemSection.tsx` line 11: 'asset_version' missing in ShopItem type. Not from this session, was already there.
-
-3. **Cloudflare DNS for bedbouncer.com** — still not configured as Custom Domain on the worker, so bedbouncer.co.uk → bedbouncer.com 301 redirect remains rolled back. Next time user is in Cloudflare dashboard, set this up.
-
-4. **Lingering hardcoded colours in finance subviews** — AccountsTab, RulesTab, ContractsTab, SavingsDash, PensionDash still have some hardcoded blue/teal colours in TSX inline styles. Some of these are user-configurable per-account colours and should NOT be changed. Audit case-by-case if a specific subview looks off.
+- **Release AAB is unverified on device.** Debug build was tested and confirmed working
+  (sign-in, ads, score all OK). Release uses ProGuard with `minifyEnabled = true`.
+  Release-only regressions are possible if any class wasn't covered by the new keep
+  rules. First closed-testing install is the real test.
+- **Old leaderboard ghost accounts.** Multiple guest accounts with the same display name
+  can exist server-side from past test installs. Doesn't break anything but is confusing
+  UX. Could prune via Turso if it becomes a problem.
+- **Privacy URL crawler check pending.** `ctrlplay.co.uk/privacy` previously returned 403
+  to Google's crawler (Cloudflare Bot Fight Mode). Must verify before Production.
 
 ---
 
 ## KEY DECISIONS MADE THIS SESSION
 
-1. **Dark/neon aesthetic chosen for all CTRL dashboards** — pure black canvas, hot pink primary accent (#FF1493), neon cyan/lime/orange/amber/purple secondaries. Italic uppercase display headings. Hero-sized KPI numerals (27-56px). Hairline card borders. This look is significantly better than Looker Studio's light/gradient style for an "operations centre" UI and is now the permanent CTRL design language.
-
-2. **Looker Studio iframe embed permanently abandoned** — Report tab and all related code/CSS removed. CTRL builds dashboards natively using its own GA4 + GSC + D1 API access. Documented in skill so future sessions don't reintroduce it.
-
-3. **Subscribers tab stays as custom CTRL component** — Looker Studio cannot connect to Cloudflare D1 directly, so subscriber data needs CTRL's own dashboard.
-
-4. **Finance KPI numerals scaled to 27px** (75% of Analytics 36px) per explicit user request — Analytics module unchanged at 36px.
-
-5. **CSS strategy for large existing files** — for finance.css (2866 lines), used append-only override at end rather than rewriting. Preserves working layouts, uses !important sparingly to win on specificity. Contrast: analytics.css was rewritten in full because it was smaller.
-
-6. **Tokens are additive** — never replace or rename existing tokens in tokens.css (other modules depend on them). Add new tokens with new names (--neon-pink, --dash-bg, etc.).
-
-7. **Dashboard skill expanded into canonical reference** for both visual design AND metric definitions — covers PPC, GA4, SEO, email, social, ecommerce, CRM, finance, subscribers, mobile games, hospitality SaaS. Includes 14 dashboard archetype recipes (pre-launch waitlist, ad performance, conversion funnel, SEO health, cash flow / AR-AP, etc.) so future sessions can build any dashboard by picking an archetype + components.
+- **Score fix:** drop `adjustsFontSizeToFit`, don't try to compensate with padding. The
+  auto-fit was the actual cause; the natural size easily fits.
+- **Ad fix:** `windowOptOutEdgeToEdgeEnforcement` on AppTheme alone is insufficient because
+  AdActivity ships its own hardcoded `@android:style/Theme.Translucent`. Override with
+  `tools:replace="android:theme"` in our manifest to inject a custom theme that opts out.
+- **Sign-in fix:** v13+ of `@react-native-google-signin/google-signin` uses Android
+  Credential Manager. `signIn()` only returns previously-saved credentials. First-timers
+  need `createAccount()`. Both must be in the app code.
+- **OAuth setup:** publish consent screen to Production (not Testing) for non-sensitive
+  scopes. Three Android OAuth clients required — one per signing key (debug, upload,
+  Play App Signing).
+- **ProGuard:** the GoogleSignIn library doesn't ship a consumer-rules.pro, so consumers
+  must add their own keep rules or release builds break silently.
 
 ---
 
 ## BACKEND API ENDPOINTS ADDED THIS SESSION
 
-None.
+None. The auth/google-signin endpoints already existed and were correct
+(`backend/src/handlers/auth.ts` — `handleGoogleSignIn`, `handleGoogleLink`,
+`handleGoogleUnlink`, plus `services/googleSignIn.ts` with `verifyGoogleIdToken` via
+`oauth2.googleapis.com/tokeninfo`).
 
 ---
 
 ## DATABASE CHANGES THIS SESSION
 
-None. The vault key 'analytics_sites' now stores ONE LESS optional field per site (lookerStudioUrl removed). Sites that already had lookerStudioUrl values stored will simply ignore the field — no migration needed.
+None. The `players.google_id` column already existed.
 
 ---
 
 ## IMPORTANT CONTEXT FOR NEXT SESSION
 
-1. **The dashboard skill is the canonical reference** — `D:\AI Work\skills\skill-dashboard-design-system.md`. Read it before any new dashboard work. It contains the complete component library, metrics catalogue with formulas, and 14 archetype recipes.
+- **Don't blanket-uninstall to retest.** If John reinstalls the debug APK after a release
+  install (or vice versa), encrypted storage is wiped (different signing keys) and the
+  guest credential is lost — new player created. With Google sign-in now working, this
+  is recoverable, but it'll show as duplicate "Bob" rows on the leaderboard (one per
+  abandoned guest UUID per name).
+- **The ProGuard rules might not be exhaustive.** If sign-in works on debug but
+  not release on the closed-testing track, look for additional `MissingClass` complaints
+  in the build log and add corresponding `-keep` or `-dontwarn` lines.
+- **Three different SHA-1s, three OAuth clients.** Don't accidentally collapse them or
+  get them confused. Debug keystore SHA-1 is for `installDebug` builds via
+  `build-phone.ps1`. Upload keystore SHA-1 is for the AAB you upload. Play App Signing
+  SHA-1 is for what end users actually run on their phones (Google re-signs your AAB).
+  Sign-in needs a registered Android client for whichever key signed the binary the user
+  is running.
+- **The `cmd.exe /c gradlew.bat ...` wrapper swallowed gradle output.** When using the
+  Bash tool to run gradle on Windows, invoke `./gradlew.bat` directly (it works under
+  Git Bash) instead of wrapping in cmd.
+- **GCP Playwright drove the OAuth setup.** Debug Chrome was launched manually with
+  `--remote-debugging-port=9222 --user-data-dir=...`, John signed in to Google Cloud
+  Console + Play Console, and Playwright drove the rest. Same flow works for
+  WordDrop / Cavernborn when they need OAuth setup.
 
-2. **Design tokens are in `src/frontend/src/core/tokens.css`** — neon dashboard tokens are at the bottom in their own section. Always reference these via CSS variables, never hardcode.
+---
 
-3. **CSS class naming convention preserved** — both analytics (ana-*) and finance (fin-*) module rebuilds preserved existing class names so React components didn't need restructuring. Future restyles should follow this pattern: rewrite CSS, leave component structure alone.
+## WHAT'S COMING UP
 
-4. **OAuth troubleshooting playbook** — if any Google API returns ACCESS_TOKEN_SCOPE_INSUFFICIENT, the fix is in Google Cloud Console: (a) enable the API in API Library, (b) register the scope on OAuth Consent Screen, (c) user revokes at myaccount.google.com/permissions and reconnects. CTRL backend code is correct.
-
-5. **Stage 8 of rollout is the highest-value next work** — building ScatterChart, Funnel, HalfGauge, HeatBarTableCell, ComboChart, WorldHeatMap as reusable React components. Once these exist, building any of the 14 archetype dashboards becomes assembly work.
-
-6. **Employer separation rule** — see `D:\AI Work\CLAUDE.md` for the full policy. Read it before any CTRLPro work or before adding any data structure / KPI / business logic that could be confused with current employer's domain. The dashboard skill is purely visual + universal metrics — fine to use anywhere.
-
-7. **Zero hardcoding rule** — every personal preference, path, credential, or name lives in config blob or vault. CTRL must be packageable as a product without refactoring.
-
-8. **The user prefers terse responses** — no preamble, no postamble, no narration of what you're about to do. State results, file paths with line numbers, and decisions directly.
+- **WordDrop dev** — design phase complete (GDD + brand updated 2026-05-04), no code yet.
+  See `D:\AI Work\Mobile-Games\games\worddrop\` and SESSION_STATE.md for the 14-phase
+  build order.
+- **Cavernborn** — even earlier, RN project not initialised.
+- **CTRL Centre** — not touched today, separate codebase at
+  `D:\AI Work\Control-Centre\`.
 
 ---
 
 ## HOW TO START THE SYSTEM
 
+For BatonDrop (today's work):
+```
+cd "D:\AI Work\Mobile-Games\games\batondrop\app"
+.\build-phone.ps1     # debug APK + install on connected phone
+# or
+cd "D:\AI Work\Mobile-Games\games\batondrop\app\android"
+./gradlew.bat bundleRelease    # signed release AAB for Play Store
+```
+
+CTRL (unchanged today):
 ```
 D:\AI Work\START-ALL.bat
 ```
 
-Or manually:
-- Backend: `cd D:\AI Work\Control-Centre && npm run dev:backend`
-- Frontend: `cd D:\AI Work\Control-Centre && npm run dev:frontend`
-- Terminal server: `cd D:\AI Work\Control-Centre\src\terminal-server && npm run dev`
-
 ---
 
-## PROJECTS OUTSIDE CTRL (for full context)
+## PROJECTS OUTSIDE MOBILE GAMES (for full context)
 
-- **CTRLPro** — hospitality SaaS, planning phase, first client conversation pending. Dashboard skill includes a Hospitality Multi-Venue archetype ready to build when first client signs.
-- **BedBouncer** — ESP32 smart alarm, Kickstarter prep Spring 2026, website live at bedbouncer.com. Now has full GA4 event tracking + dashboard skill includes the Pre-launch Waitlist archetype.
-- **CTRLPlay** — mobile games studio (Cavernborn, BatonDrop, WordDrop). Dashboard skill includes a Mobile Game LiveOps archetype (DAU/MAU, retention curves, LTV:CPI ratio targets).
+- **CTRL** — local web app for John's working day, active build, untouched today
+- **CTRLPro** — hospitality SaaS dashboard, planning phase, first client conversation pending
+- **BedBouncer** — ESP32 smart alarm, Kickstarter prep, needs product video, website live at bedbouncer.co.uk
