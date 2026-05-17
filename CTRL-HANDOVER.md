@@ -1,30 +1,30 @@
 # CTRL Project Handover
-*Last updated: 2026-05-14 UTC*
-*Session ended: After building Vertex AI as a switchable alternative provider to Google AI Studio for Gemini image gen + Veo video gen.*
+*Last updated: 2026-05-17 UTC*
+*Session ended: WordDrop v3 drag-drop rebuild + plugin/skill bootstrap (NOT a CTRL build session — handover reflects the Mobile-Games + skills work that actually happened)*
 
 ---
 
 ## HOW TO USE THIS DOCUMENT
 
-You are Claude web browser picking up a CTRL development session.
+You are Claude web browser picking up where Claude Code left off.
 John Roberts is the developer. Read this entire document before responding.
-When John returns, he will paste in any files or context from the web session.
 
-The CTRL codebase is at: `D:\AI Work\Control-Centre\`
-Backend: Node.js + Express + TypeScript on port 3001
-Frontend: React 18 + Vite + TypeScript on port 5173
-Terminal server: node-pty WebSocket server on port 3002
-Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db`
+The active project this session was **Mobile-Games / WordDrop**, not CTRL.
+CTRL was only touched to add the new `skill-ctrl-design.md` file.
+
+CTRL codebase: `D:\AI Work\Control-Centre\` (untouched this session beyond skill files)
+Mobile-Games: `D:\AI Work\Mobile-Games\`
+WordDrop: `D:\AI Work\Mobile-Games\games\worddrop\WordDrop\`
 
 ---
 
 ## WHAT WE WERE BUILDING THIS SESSION
 
-This session had two main threads of work, both centred on the Google/Gmail tab and the Gemini API:
+Two parallel threads:
 
-**Part 1 — Gmail tab performance + reliability fixes.** The "initial open is slow" problem was a server-side `COUNT(*)` query running on every list fetch; dropped that + reduced initial page size 75→25 + debounced SSE-triggered refetches. Stopped backlog status polling when idle. Made the Gmail tab stay mounted across tab switches (display:none pattern from the Claude tab) so returning to Google doesn't re-fetch from scratch.
+**1. WordDrop v3 redesign — drag-and-drop completely rebuilt.** Spec was reversed mid-session: instead of validate-on-place crossword, the new mechanic is drop-anywhere on any empty cell. A CLEAR button (endless) walks rows + columns, finds valid en-GB words, removes them, scores them, and applies Tetris column gravity. Daily auto-clears on board full + all valid. Drag mechanic was rewritten three times this session as John iterated on feel — current state uses worklet-first Pan callbacks, ghost rendered OUTSIDE SafeAreaView (window-relative coords), snap-to-nearest with overhang slop, hit-test on ghost center not finger, and a live hover-cell highlight via useAnimatedReaction.
 
-**Part 2 — Vertex AI integration.** John has £225 of unused GCP Free Credit expiring 2026-07-23, but it doesn't apply to the AI Studio Gemini API (`generativelanguage.googleapis.com`). Solution: add Vertex AI as a switchable alternative provider. Built it as a manual per-service toggle (Gemini, Veo) with vault-stored service account credentials, OAuth via `google-auth-library`, and a Settings UI section to flip between providers + initial vault setup form. Plus added retry-with-backoff to all Gemini API calls so 503s auto-recover (was triggered by repeated 503 errors mid-session — Gemini's image preview model is unstable).
+**2. Plugin / skill bootstrap for game dev.** Installed 4 Claude Code plugins (Software Mansion, Callstack RN best practices, Anthropic frontend-design, Jezweb Cloudflare). Merged two duplicate design-skill files into one canonical `skill-mobile-design.md` (859 lines) with detailed sections per plugin + a 0–3 review rubric. Created `skill-ctrl-design.md` (419 lines) at Control-Centre/skills for cross-stack consistency. Fixed two install blockers: github.com SSH host key + git `url.insteadOf` rewrite for plugin clones over HTTPS.
 
 ---
 
@@ -32,264 +32,167 @@ This session had two main threads of work, both centred on the Google/Gmail tab 
 
 ### Recently completed (this session)
 
-1. **Gmail/Email perf fixes** in `src/backend/src/routes/email-intelligence.routes.ts` and `src/frontend/src/modules/gmail/Gmail.tsx`:
-   - Dropped `COUNT(*)` from `/api/email/list`. Fetches `limit + 1`, derives `hasMore` from row count. Response shape changed from `{ emails, total, nextOffset }` to `{ emails, nextOffset }`.
-   - Initial page size 75 → 25.
-   - SSE refetches debounced 1.5s.
-   - Backlog polling now only runs when `backlog?.status === 'running'` (was polling forever every 3s).
+- **WordDrop v3 drag-drop architecture** (worklet-first, ghost-at-root, snap-to-nearest, hover indicator)
+- **`src/game/clearer.ts`** — clear+gravity engine (find valid words, remove, Tetris column settling)
+- **`src/util/dragHitTest.ts`** — shared helper (GHOST_SIZE=56, GHOST_LIFT=110, hitTestNearestCell())
+- **Daily Challenge** — tower builds up via constant-cadence drops (was wrong one-at-a-time), 3 stages with curated magic-word-square pools
+- **MainMenu** — two-button picker (DAILY CHALLENGE + ENDLESS) replacing single PLAY
+- **GameOver** — adds longest word + best word reveal
+- **Plugins installed**: skills@swmansion, frontend-design@anthropics, react-native-best-practices@callstack-agent-skills, cloudflare@jezweb-skills
+- **Canonical skill files**: `D:\AI Work\Mobile-Games\skills\skill-mobile-design.md` (merged), `D:\AI Work\Control-Centre\skills\skill-ctrl-design.md` (new)
+- **Auto-load registered**: `@skills/skill-mobile-design.md` added to `D:\AI Work\Mobile-Games\CLAUDE.md`
 
-2. **Gmail tab stays mounted** in `src/frontend/src/core/AppShell.tsx`:
-   - Wrapped `<PageTerminal><Gmail /></PageTerminal>` in a `display: activeTab === 'google' ? 'flex' : 'none'` div, mirroring the Claude tab pattern at lines 70-73.
-   - Trade-off documented: SSE listener stays connected in background, but that's a feature not a bug.
+### In progress right now (was being tested when /afk fired)
 
-3. **Gemini API retry logic** in `src/backend/src/services/creative.service.ts` `geminiGenerateImage`:
-   - 4 attempts (1 initial + 3 retries) on 429/500/502/503/504/network errors
-   - Exponential backoff 1s → 2s → 4s
-   - Honours `Retry-After` header if present
-   - Logs each retry: `[Gemini/{provider}] {status} on attempt {n}/4, retrying in {delay}ms`
+- Smoke-testing the new drag mechanic on emulator-5554 (com.worddrop)
+- John's last reported issue: "the tile is placed slightly higher than it should be" — the fix (ghost outside SafeAreaView for window-relative coords) is shipped but not yet confirmed by John
+- Daily Challenge constant-cadence drops just landed — untested
+- Live hover indicator wired — untested
 
-4. **Vertex AI integration** (NEW FILES + EDITS):
-   - `src/backend/src/services/vertex-auth.service.ts` (NEW) — OAuth via `google-auth-library@10.6.2`. Reads service account JSON, project ID, region from vault. JWT cached after first load. Exports `getVertexContext()`, `vertexModelUrl()`, `isVertexConfigured()`, `resetVertexAuth()`.
-   - `src/backend/src/services/ai-provider.service.ts` (NEW) — reads/writes `aiProvider.gemini` and `aiProvider.veo` in `.ctrl-config.json`. Defaults both to 'aistudio'.
-   - `src/backend/src/services/creative.service.ts` — `geminiGenerateImage` now dispatches by provider. API key param removed (function fetches it internally when on aistudio path). Callers `generateSprite` and `generateImg2Img` simplified — no more API key lookup at the call site.
-   - `src/backend/src/services/video-generation.service.ts` — `buildVeoAuth()` helper builds provider-aware submit/poll URLs + headers. Veo response shape handles three cases: AI Studio URI, Vertex inline base64, Vertex GCS URI (the last throws "not supported"). Helper `computeOutputPath()` shared between download paths. `saveVeoBytes()` writes inline base64 directly to disk.
-   - `src/backend/src/routes/ai-providers.routes.ts` (NEW) — `GET /api/ai-providers` returns config + vertexReady status; `POST /api/ai-providers/:service` flips a provider.
-   - `src/backend/src/server.ts` — wires the new router at `/api/ai-providers` behind `requireVaultUnlocked`.
-   - `src/frontend/src/services/ai-providers.service.ts` (NEW) — typed API client.
-   - `src/frontend/src/modules/settings/components/AIProvidersSection.tsx` (NEW) — Settings UI: Vertex setup status, inline form to paste service account JSON / project ID / region (writes 3 vault keys via `vaultApi.setKey`), per-service toggle buttons (locked when Vertex not configured), tips reminding about the £225 credit.
-   - `src/frontend/src/modules/settings/Settings.tsx` — wired new section + icon (Cpu).
+### Pending / next steps
 
-5. **Type checks clean** on both backend and frontend (`tsc --noEmit`).
-
-### In progress right now
-Nothing half-built — all changes are coherent and type-check clean.
-
-### Pending / next steps when John returns
-1. **Restart backend:** `pm2 restart ctrl-backend` — the retry logic AND Vertex AI integration both require restart (PM2 has `watch: false`).
-2. **Set up Vertex in Settings → AI Providers:**
-   - Cloud Console → IAM → Service Accounts → create with role "Vertex AI User"
-   - Keys → JSON → paste into Settings UI
-   - Project ID: `ctrl-493720`
-   - Region: `europe-west2`
-3. **Flip Gemini → Vertex AI** and generate a sprite. Watch the £225 credit balance start ticking down at console.cloud.google.com → Billing → Credits.
-4. **Test Veo on Vertex (optional)** — works for inline base64 (8-second clips under ~20MB). Larger videos need GCS support which isn't implemented yet.
+1. **Smoke test drag on emulator** — corners + edges + every cell in both Endless and Daily
+2. **Smoke test Daily** — constant drops, undo, auto-clear on full+valid, stage progression 3→4→5
+3. **Test Endless CLEAR button** — valid word detection, scoring, column gravity
+4. **Sanity-check plugins** in a fresh session by asking: "Review WordDrop's current UI using skill-mobile-design.md's review rubric"
+5. **Update Claude Code to v2.1.139+** (`npm install -g @anthropic-ai/claude-code@latest`) — current 2.1.116 throws "unhandled case [object Object]" in VS Code
 
 ---
 
-## ALL MODULES — STATUS
+## ALL MODULES — STATUS (CTRL — untouched this session)
 
 | Module | Location | Status | Notes |
 |--------|----------|--------|-------|
-| Home | src/frontend/src/modules/home/ | working | (untouched this session) |
-| Claude Tab | src/frontend/src/modules/claude-tab/ | working | (untouched this session) |
-| Gmail/Google | src/frontend/src/modules/gmail/ | **improved this session** | perf fixes, stays mounted across tab switches |
-| Tasks | src/frontend/src/modules/tasks/ | working | (untouched) |
-| Projects | src/frontend/src/modules/projects/ | working | (untouched) |
-| Finance | src/frontend/src/modules/finance/ | working | (untouched) |
-| Trading | src/frontend/src/modules/trading/ | working | (untouched) |
-| GitHub | src/frontend/src/modules/github/ | working | (untouched) |
-| Cloudflare | src/frontend/src/modules/cloudflare/ | working | (untouched) |
-| Brand Toolkit | src/frontend/src/modules/brand-toolkit/ | working | indirectly affected: brand image generation flows through `creative.service.ts` which can now use Vertex |
-| Settings | src/frontend/src/modules/settings/ | **new section added** | AI Providers section + vault setup form |
-| Admin | src/frontend/src/modules/admin/ | working | (untouched) |
-| Design | src/frontend/src/modules/design/ | indirectly affected | sprite/img2img both go through `creative.service.ts` — Vertex toggle applies here |
-| Video gen | src/frontend/src/modules/video-generation/ | indirectly affected | Veo provider toggle applies here |
+| Home | src/frontend/src/modules/home/ | Working | basic, needs redesign |
+| Claude Tab | src/frontend/src/modules/claude-tab/ | Working | xterm.js WebSocket |
+| Gmail/Google | src/frontend/src/modules/gmail/ | Working | real data via OAuth |
+| Tasks | src/frontend/src/modules/tasks/ | Working | |
+| Projects | src/frontend/src/modules/projects/ | Working | Project Spine done |
+| Finance | src/frontend/src/modules/finance/ | Working | ProjectSelector wired |
+| Trading | src/frontend/src/modules/trading/ | Working | |
+| GitHub | src/frontend/src/modules/github/ | Working | ProjectSelector wired |
+| Cloudflare | src/frontend/src/modules/cloudflare/ | Working | |
+| Brand Toolkit | src/frontend/src/modules/brand-toolkit/ | Working | |
+| Settings | src/frontend/src/modules/settings/ | Working | |
+| Admin | src/frontend/src/modules/admin/ | Working | Projects section live |
 
 ---
 
 ## FILES CREATED OR MODIFIED THIS SESSION
 
+### Mobile-Games / WordDrop
+
 ```
-NEW FILES
-src/backend/src/services/vertex-auth.service.ts
-    OAuth wrapper around google-auth-library. Loads service account JSON from vault,
-    mints + caches access tokens. Exports getVertexContext, vertexModelUrl, isVertexConfigured.
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\src\game\clearer.ts                  — NEW: find valid words, remove, column gravity
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\src\util\dragHitTest.ts             — NEW: shared GHOST_SIZE/LIFT + hitTestNearestCell()
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\src\hooks\useEndlessGame.ts         — REWRITTEN: 5x5 empty, no place check, clear() action
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\src\hooks\useDailyChallenge.ts      — REWRITTEN: tower build-up, undo, auto-clear
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\src\components\Tower.tsx            — Worklet-first Pan, shared ghost values, runOnJS only for lift/end
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\src\components\Board.tsx            — Drop on any empty cell, hoverCell prop
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\src\screens\EndlessGame.tsx         — Ghost outside SafeAreaView, hit-test helper, CLEAR button
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\src\screens\DailyChallenge.tsx      — Same drag pattern, Undo button, tiles-left counter
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\src\screens\MainMenu.tsx            — Two-button picker (DAILY CHALLENGE + ENDLESS)
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\src\screens\GameOver.tsx            — Adds longest word + best word fields
+D:\AI Work\Mobile-Games\games\worddrop\WordDrop\App.tsx                              — Routing for daily + endless + dailyresult
+```
 
-src/backend/src/services/ai-provider.service.ts
-    Reads/writes aiProvider.{gemini,veo} in .ctrl-config.json. Defaults to 'aistudio'.
+### Skills / docs
 
-src/backend/src/routes/ai-providers.routes.ts
-    GET / POST /api/ai-providers — read status + flip per-service provider.
-
-src/frontend/src/services/ai-providers.service.ts
-    Typed API client for the routes above.
-
-src/frontend/src/modules/settings/components/AIProvidersSection.tsx
-    Settings UI: Vertex status, inline vault setup form, per-service toggles, tips.
-
-skills/skill-ai-providers.md
-    Full reference doc for the AI provider switch.
-
-MODIFIED FILES
-src/backend/src/services/creative.service.ts
-    Added retry-with-backoff loop. Added provider-aware dispatch for geminiGenerateImage.
-    Removed apiKey param from internal function — now fetched inside on aistudio path.
-
-src/backend/src/services/video-generation.service.ts
-    Added buildVeoAuth helper for provider-aware URL+headers.
-    Handles 3 response shapes: AI Studio URI, Vertex base64 inline, Vertex GCS (errors).
-    Shared computeOutputPath helper. New saveVeoBytes for inline writes.
-    Removed dead getApiKey function.
-
-src/backend/src/routes/email-intelligence.routes.ts
-    /api/email/list: dropped COUNT(*), fetch limit+1, return { emails, nextOffset }.
-
-src/backend/src/server.ts
-    Wired aiProvidersRouter at /api/ai-providers.
-
-src/frontend/src/modules/gmail/Gmail.tsx
-    Removed emailTotal state. Page size 75->25. Footer button text simplified.
-    SSE refetches debounced 1.5s. Backlog polling gated on status==='running'.
-
-src/frontend/src/core/AppShell.tsx
-    Gmail tab now stays mounted via display:none pattern (matches Claude tab).
-
-src/frontend/src/services/email-intel.service.ts
-    listEmails return type: removed `total` field.
-
-src/frontend/src/modules/settings/Settings.tsx
-    Wired AIProvidersSection + Cpu icon + 'ai-providers' section.
-
-DEPENDENCY
-src/backend/package.json
-    Added: google-auth-library@10.6.2
+```
+D:\AI Work\Mobile-Games\skills\skill-mobile-design.md         — MERGED + EXTENDED (859 lines, canonical)
+D:\AI Work\Mobile-Games\skills\skill-mobile-game-design.md    — DELETED (merged into above)
+D:\AI Work\Control-Centre\skills\skill-ctrl-design.md         — NEW (419 lines)
+D:\AI Work\Mobile-Games\CLAUDE.md                              — added @skills/skill-mobile-design.md line
+D:\AI Work\Mobile-Games\SESSION_STATE.md                       — overwritten (this session)
+D:\AI Work\Mobile-Games\LEARNINGS.md                            — appended (10 new entries)
 ```
 
 ---
 
 ## RECENT GIT COMMITS
 
-`D:/AI Work/Control-Centre` is NOT a git repo. All session work lives only on local disk. The linked project repos (BedBouncer, BatonDrop) that ARE git repos were auto-committed and pushed at /afk time.
+Control-Centre is not currently a git repo (no .git directory at root). WordDrop also not git-versioned. No commit history to surface.
 
 ---
 
 ## OPEN ISSUES / KNOWN BUGS
 
-1. **Veo on Vertex with GCS storage not implemented.** If a future Veo call ever returns a `gcsUri` (which would only happen if `parameters.storageUri` is set in the request — which we never do), the path throws "Veo returned a GCS URI; download from gs:// is not yet supported". For now this is impossible to hit because we never set `storageUri`. Future enhancement only if users want videos > ~20MB.
-
-2. **First Vertex call after backend restart is slow** (1-2s extra) — JWT must sign + exchange for OAuth token. Subsequent calls reuse cached token. Not a bug, just a one-time latency.
-
-3. **Existing 503 issue from earlier in the session** — `gemini-3.1-flash-image-preview` is genuinely overloaded on Google's side. Retry logic will mask most cases now, but if all 4 attempts fail it's a real upstream outage. Moving to Vertex AI for Gemini may have lower 503 rate (less contention) but isn't guaranteed.
-
-4. **Tier 1 of Gemini API limits still apply** until John has spent $100 USD cumulative across both AI Studio AND Vertex. Higher tier = higher rate limits. The £225 credit doesn't accelerate this — tier is based on spend, not credit.
+- **Claude Code VS Code extension on 2.1.116** throws "unhandled case [object Object]" intermittently when payloads contain types it can't render. Fix: `npm install -g @anthropic-ai/claude-code@latest` (target 2.1.139+).
+- **Daily mode letter pools** depend on en-GB SOWPODS having TRETS, REEF, etc. — assumed valid, not verified.
+- **Cloudflare leaderboard Worker** for endless scores is documented in WORDDROP-REDESIGN-v2.md but not yet built (deferred per spec — would be a dedicated session).
+- **BatonDrop v2.0 AAB (versionCode 21)** still unsuploaded at `D:\AI Work\Mobile-Games\games\batondrop\app\android\app\build\outputs\bundle\release\app-release.aab` (125 MB) — versionCode 21 is "consumed" once it's uploaded so next attempt is 22.
+- **Drag fix not yet confirmed** by John in hands-on testing.
 
 ---
 
 ## KEY DECISIONS MADE THIS SESSION
 
-1. **Manual provider switch over auto-fallback or smart cost routing.** Reason: simpler to reason about which provider actually ran each call. User asked for this explicitly via AskUserQuestion.
-
-2. **Inline base64 response for Vertex Veo, not GCS.** Avoids needing a Cloud Storage bucket setup. 8-second 720p clips fit under the 20MB inline limit.
-
-3. **`.ctrl-config.json` for the provider flag, not the database.** It's a simple boolean-ish flag with no relational ties. Direct JSON read/write is fine.
-
-4. **`google-auth-library` (official) over hand-rolling JWT+OAuth.** ~50 lines of fiddly RSA-SHA256 + token caching avoided. v10.6.2 returns `Headers` object from `getRequestHeaders()`.
-
-5. **Removed `apiKey` parameter from `geminiGenerateImage`.** Function now fetches from vault internally on aistudio path. Cleaner call sites.
-
-6. **PM2 `watch: false` stays as-is.** Code changes require manual `pm2 restart ctrl-backend`. Hot reload would risk mid-request restarts.
+- **Drag mechanic is drop-anywhere with deferred validation.** v2 spec (validate-on-place crossword) was scrapped. CLEAR button validates in endless; daily auto-clears on full+valid.
+- **Tower keeps gravity (auto-drop), board does not.** Player can place a tile in any empty cell, including top row with nothing below.
+- **Daily uses constant cadence** (4500ms), no escalation. Tower builds up; game over at 8 same as endless.
+- **Newest tower letter at BOTTOM** of stack (`flexDirection: column-reverse`) — matches spec figure.
+- **Drag ghost outside SafeAreaView** is the canonical fix for visual-vs-hit-test coord mismatch. Insets-subtraction was a hack masking the real issue.
+- **GHOST_LIFT = 110pt** (was 78). Hit-test uses ghost CENTER, not finger.
+- **Snap-to-nearest** via `Math.round` + 1.25-cell overhang slop. Corners now reachable.
+- **Live hover-cell highlight** via `useAnimatedReaction` watching ghost shared values; `runOnJS` only when cell ID changes.
+- **One canonical skill file** `skill-mobile-design.md` (merged from two duplicates).
+- **CTRL gets its own design skill** `skill-ctrl-design.md` — same plugins, project-specific framing. `frontend-design@anthropics` is NOT mobile-specific.
+- **Plugin installs via VS Code UI**, not slash commands (the extension blocks `/plugin`). Fix git SSH issues first.
 
 ---
 
 ## BACKEND API ENDPOINTS ADDED THIS SESSION
 
-```
-GET  /api/ai-providers              -> { config: { gemini, veo }, vertexReady: boolean }
-POST /api/ai-providers/gemini       -> body { provider: 'aistudio' | 'vertex' }
-POST /api/ai-providers/veo          -> body { provider: 'aistudio' | 'vertex' }
-```
-
-All three require vault unlocked (mounted behind `requireVaultUnlocked`).
-
-The existing `/api/email/list` route changed its response shape:
-- Old: `{ emails, total, nextOffset }`
-- New: `{ emails, nextOffset }` — `total` field removed
-
-Only the Gmail.tsx frontend consumes this and was updated in lockstep.
+None — no CTRL backend work this session.
 
 ---
 
 ## DATABASE CHANGES THIS SESSION
 
-None. No migrations, no schema changes.
-
----
-
-## CONFIG FILE CHANGES
-
-`.ctrl-config.json` gains an `aiProvider` key on first toggle:
-
-```json
-{
-  "aiProvider": {
-    "gemini": "aistudio",
-    "veo":    "aistudio"
-  }
-}
-```
-
-Values: `'aistudio'` or `'vertex'`. Default is `'aistudio'` if the key is missing.
-
----
-
-## VAULT KEYS ADDED (CONCEPTUALLY)
-
-Three new vault keys exist conceptually — they're set via the Settings UI when user runs through the Vertex setup form:
-
-| Key | Type | Purpose |
-|-----|------|---------|
-| `vertex_service_account` | JSON string | Full GCP service account key file content |
-| `vertex_project_id` | string | e.g. `ctrl-493720` (the ID string, NOT the project number) |
-| `vertex_region` | string | e.g. `europe-west2` (UK) or `us-central1` (widest model coverage) |
-
-None of these are written until user goes through the form. The `isVertexConfigured()` check requires all three.
+None — no CTRL DB work this session.
 
 ---
 
 ## IMPORTANT CONTEXT FOR NEXT SESSION
 
-1. **Backend must be restarted to load any of this.** Both the retry logic and the Vertex integration are dormant until `pm2 restart ctrl-backend` is run. John was warned about this in chat.
-
-2. **The retry logic ALONE was added before the full Vertex integration.** Even if user doesn't want to set up Vertex, the retry-with-backoff against AI Studio will help recover from the 503s that triggered this whole thread.
-
-3. **The Settings UI lock behaviour:** when Vertex is not configured (`vertexReady: false`), the per-service toggle buttons are disabled. User MUST set up Vertex via the form before they can flip a toggle. Prevents flipping to a non-functional state.
-
-4. **Cavernborn Comedy Baton video prompts** — earlier in the session John was reviewing Veo prompts from `D:\AI Work\Mobile-Games\games\batondrop\files\brand\documents\CAVERNBORN-COMEDY-PROMPTS.md`. Prompts 1, 2, and 3 were extracted with settings. The character animation/expression issues he flagged on the first videos suggest the production notes' suggestions are needed: `"exaggerated comedy expression"` and `"the expression holds for 2 full seconds"` added to prompts. He'd planned to send stills for visual critique.
-
-5. **The skill file `skills/skill-ai-providers.md`** is the authoritative reference for the new integration. Read it before touching anything related to Gemini API calls, Vertex AI, or AI provider switching.
-
-6. **No git history exists for Control-Centre.** Session work is on disk only. If anything goes wrong, there's no rollback — just edit forward.
+- **WordDrop drag rewrite ships in three layers and ALL are required**: (1) worklet-first Pan, (2) ghost rendered outside SafeAreaView, (3) shared hitTestNearestCell helper. Removing any one re-breaks the corners/snap behaviour.
+- **Daily mode now tests the same overflow rule as endless** — tower fills, drops keep coming on a 4500ms timer until the sequence is exhausted. If John reports "daily feels too easy", the cadence may need shortening.
+- **Plugin slash commands (`/plugin marketplace add` etc.) DO NOT WORK in the VS Code Claude Code extension** — they only work in the standalone Claude Code CLI. Use the Plugin UI in VS Code: Marketplaces tab → add `owner/repo` → Discover → Install for you.
+- **Git is configured to clone github.com over HTTPS** even when SSH URLs are given (`url.insteadOf` rewrite). Public repo clones don't need an SSH key. Authenticated pushes do — `gh auth status` should show JohnRoberts-prod.
+- **`skill-mobile-design.md` auto-loads on every Mobile-Games session** via the `@skills/skill-mobile-design.md` line in Mobile-Games/CLAUDE.md. Do the same for skill-ctrl-design.md when ready — would need adding to Control-Centre/CLAUDE.md.
 
 ---
 
 ## HOW TO START THE SYSTEM
 
+CTRL:
+
 ```
 D:\AI Work\START-ALL.bat
 ```
 
-Or via PM2:
-- `pm2 start D:\AI Work\Control-Centre\ecosystem.config.cjs`
-- `pm2 restart ctrl-backend` (after code changes)
-- `pm2 status` to see all three processes (ctrl-backend, ctrl-terminal, ctrl-frontend)
+WordDrop:
 
-Or manually:
-- Backend: `cd D:\AI Work\Control-Centre && npm run dev:backend`
-- Frontend: `cd D:\AI Work\Control-Centre && npm run dev:frontend`
-- Terminal server: `cd D:\AI Work\Control-Centre\src\terminal-server && npm run dev`
+```
+cd "D:\AI Work\Mobile-Games\games\worddrop\WordDrop"
+npx react-native start --port 8082
+```
+
+Then on the emulator (adb device emulator-5554):
+
+```
+adb reverse tcp:8082 tcp:8082
+adb shell am start -n com.worddrop/.MainActivity
+```
 
 ---
 
 ## PROJECTS OUTSIDE CTRL (for full context)
 
-- **CTRLPro** — hospitality SaaS dashboard, planning phase, first client conversation pending
-- **BedBouncer** — ESP32 smart alarm, Kickstarter prep, website live at bedbouncer.co.uk, needs product video
-- **Mobile Games:**
-  - **BatonDrop** — drop-reflex casual game (React Native), v1.7 shipped, in development
-  - **WordDrop** — word puzzle idle game (React Native 0.85.2), GDD complete, ready to build
-  - **Cavernborn** — dark fantasy idle RPG (React Native + Skia + Reanimated), planning, RN project not yet initialised
-- **Personal** — AFK / dev environment / handover system
+- **UnifyBI / CTRLPro** — hospitality SaaS dashboard, planning phase, first client conversation pending
+- **BedBouncer** — ESP32 smart alarm, Kickstarter prep, needs product video
+- **Mobile Games** — active. BatonDrop v2.0 ready to upload (AAB sitting). WordDrop v3 drag-drop just rebuilt this session. WordChain planned next (new NativeWind + GlueStack stack). Cavernborn in planning.
 
 ---
 
-*This handover doc was generated by Claude Code at session end. The user types `/afk` and this file is pushed to GitHub at `JohnRoberts-prod/ctrl-handover` for Claude web to fetch.*
+*This handover was generated by /afk on 2026-05-17 after a WordDrop + design-skills session. CTRL itself was untouched beyond the new skill-ctrl-design.md file.*
