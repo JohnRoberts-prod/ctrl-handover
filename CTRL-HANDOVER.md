@@ -1,6 +1,6 @@
 # CTRL Project Handover
-*Last updated: 2026-05-17 (end of session) UTC*
-*Session ended: After hot-patching the vault-lock loop and slow-load issues on the new Home page*
+*Last updated: 2026-05-19 (end of long session)*
+*Session ended: Vertex AI setup partway through — service account JSON in vault, two more vault keys pending. Also: BatonDrop got approved for Google Play production today.*
 
 ---
 
@@ -12,199 +12,151 @@ When John returns, he will paste in any files or context from the web session.
 
 The CTRL codebase is at: `D:\AI Work\Control-Centre\`
 Backend: Node.js + Express + TypeScript on port 3001
-Frontend: React 18 + Vite + TypeScript on port 5173 (NOT in git)
+Frontend: React 18 + Vite + TypeScript on port 5173
 Terminal server: node-pty WebSocket server on port 3002
 Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db`
 
 ---
 
+## 🎉 HEADLINE NEWS
+
+**BatonDrop is LIVE on Google Play (approved 2026-05-19).** First CTRL Play game to clear the bar. Submitted 2026-05-17, 2-day turnaround. All post-launch monitoring tasks (review responses, Crashlytics, AdMob fill rate, Day-1 retention check) are seeded in BatonDrop's Tasks list — start there.
+
+---
+
 ## WHAT WE WERE BUILDING THIS SESSION
 
-A LONG session covering six distinct phases:
-
-1. **WordDrop audit** against the rebuilt mobile-design skill — confirmed 21/24 score, flagged circular-validation caveat.
-2. **Full CTRL design audit** — Nielsen total dropped 29 → 23/40 because the token layer pivoted to Neon Dark but DESIGN.md and modules hadn't followed.
-3. **Neon canonical pivot** — DESIGN.md rewritten for Neon Dark + Linear preset, runtime theme system built (CSS custom properties + `[data-theme]` blocks + ThemeService + Admin → Theme UI with preset/accent/radius/density override).
-4. **Phase D1 + D2 cleanup pass** (agent-driven) — module CSS hex literals 664 → 16 (data-only); `!important` in finance.css 46 → 0; .tsx inline hex 246 → 100; chart palettes now use `--chart-1..8` tokens.
-5. **Toast undo pattern** — built ToastProvider + useToast hook at `shared/components/Toast.tsx` using a "delayed-commit" pattern (API fires 5s after action; undo cancels both). Wired into Tasks delete, Gmail archive/trash, Projects task delete. IntelSidebar bulk-op alerts converted to toast feedback.
-6. **Home page** — built the daily focus surface: Focus Today (overdue + due today combined from Google Tasks + project tasks), Deadlines (next 7 days), Projects (sorted by sort_order priority). FocusRow component handles complete/edit/delete/deep-link inline. Project sort_order plumbed through backend + drag-reorder UI in Projects module. Wired into AppShell as the default tab.
-
-Also: **BatonDrop production application submitted to Google Play** — v2.0.0 (versionCode 21). Logged at `D:\AI Work\Mobile-Games\games\batondrop\knowledge\production-application-2026-05-17.md`.
+A multi-hour session that touched almost every CTRL module. Final activity before /afk: configuring Vertex AI so Gemini calls consume the £225 GCP credit on project `ctrl-493720`. The service account is created and its JSON key is in the vault under `vertex_service_account`. The Settings → AI Providers status page reports it needs **two more vault keys** (`vertex_project_id` + `vertex_region`) before flipping to "configured" — those are the first clicks tomorrow.
 
 ---
 
 ## CURRENT BUILD STATE
 
 ### Recently completed (this session)
-
-**Documentation**
-- `DESIGN.md` — full rewrite (Neon Dark canonical + Linear preset)
-- `skills/skill-ctrl-design.md` — palette quick-ref + anti-patterns under neon
-- `knowledge/design/ctrl-ui-critique-2026-05-17.md` — new audit baseline (NEW)
-- `knowledge/design/ctrl-ui-critique-2026-04-28.md` — deprecation header added
-- `CLAUDE.md` — design system description updated
-- `PROJECT-SUMMARY.md` — design reference updated
-- `skills/skill-toast-undo.md` — NEW skill doc for the toast pattern
-- `SESSION_STATE.md` — current state captured
-- `LEARNINGS.md` — 12 new entries appended
-
-**Theme system**
-- `src/frontend/src/core/tokens.css` — refactored for `[data-theme]` switching + `--chart-1..8` series
-- `src/frontend/src/core/base.css` — Inter font loaded, `.btn--hero` variant, `.task-focused` highlight class
-- `src/frontend/src/core/shell.css` — sidebar transition perf (contain + will-change)
-- `src/frontend/src/core/ThemeService.ts` — NEW (applies theme on boot + on event)
-- `src/frontend/src/main.tsx` — initTheme() boot + vault-locked event DEBOUNCE
-- `src/frontend/src/services/config.service.ts` — ThemePreferences types
-- `src/frontend/src/modules/admin/Admin.tsx` — Theme section wired in as first tab
-- `src/frontend/src/modules/admin/components/ThemeSection.tsx` — NEW
-
-**Toast undo pattern**
-- `src/frontend/src/shared/components/Toast.tsx` — NEW
-- `src/frontend/src/shared/components/Toast.css` — NEW
-- `src/frontend/src/App.tsx` — wrapped in ToastProvider
-
-**Module CSS cleanup (Phase D1, agent-driven)**
-- 24 module CSS files edited — hex literals 664 → 16 (legitimate data only)
-- `finance.css` — palette rationalised, all 46 `!important` removed
-- Various bar/gauge transitions converted from `width` to `transform: scaleX`
-
-**`.tsx` inline hex strip (Phase D2, agent-driven)**
-- 40 `.tsx` files edited — inline hex 246 → 100 (all legitimate user-choice palettes or external data)
-- Chart palettes across analytics/finance/dashboard now use `--chart-1..8`
-- JS bar widths migrated to `transform: scaleX` to pair with the CSS work
-
-**Home page (NEW module)**
-- `src/frontend/src/modules/home/Home.tsx` — NEW
-- `src/frontend/src/modules/home/components/FocusRow.tsx` — NEW
-- `src/frontend/src/modules/home/components/FocusRow.css` — placeholder (styles in home.css)
-- `src/frontend/src/modules/home/home.types.ts` — NEW (FocusItem, FocusTarget)
-- `src/frontend/src/modules/home/useFocusTaskNav.ts` — NEW (deep-link event + listener hook)
-- `src/frontend/src/modules/home/home.css` — NEW
-- `src/frontend/src/modules/home/index.ts` — NEW
-- `src/frontend/src/core/AppShell.tsx` — Home tab wired in
-- `src/frontend/src/modules/tasks/Tasks.tsx` — useToast, useFocusTaskListener, handleDelete with toast undo
-- `src/frontend/src/modules/tasks/components/TaskBoard.tsx` — `data-task-id` on rows
-- `src/frontend/src/modules/gmail/Gmail.tsx` — useToast, handleArchive/Trash with delayed-commit (NOTE: has setState updater bug)
-- `src/frontend/src/modules/gmail/components/IntelSidebar.tsx` — useToast, alerts → toasts
-- `src/frontend/src/modules/projects/Projects.tsx` — drag-reorder UI, useFocusTaskListener
-- `src/frontend/src/modules/projects/projects.css` — drag handle CSS, side-stripe fix
-- `src/frontend/src/modules/projects/components/ProjectGroup.tsx` — useToast, handleDelete with delayed-commit + pendingDeletes
-- `src/frontend/src/modules/projects/components/TaskRow.tsx` — `data-task-id` on row
-- `src/frontend/src/services/projects.service.ts` — Project.sortOrder + reorderProjects API
-- `src/backend/src/services/projects.service.ts` — Project type + listProjects sort_order
-- `src/backend/src/routes/projects.routes.ts` — `/list/reorder` endpoint, `/list/:id` PATCH accepts sortOrder
-- `D:\AI Work\.ctrl-config.json` — `preferences.appearance.theme` block added
+- **Tasks tab — Monday-clone rebuild** (Google Tasks-backed, project hierarchy with Mobile Games as parent, 10 sub-games nested, collapsed by default, QuickAdd per group, expandable rows with notes/subtasks/priority/due chips)
+- **Projects tab removed entirely** — Home rewritten to read tasks from Google Tasks via `project_lists` mapping
+- **Home — widget grid v2** — 6 widgets (Finance, Today, Priority, This Week, Pulse, Recent emails) in a 12-col CSS grid, responsive collapse to 6-col on mobile
+- **Admin Projects — big-card rebuild** — website/code/tasks slots, inline colour picker, status badges, sub-projects indented (no side-stripe)
+- **Project colours — chart-N palette** — auto-assigned on creation, theme-aware via `var(--chart-N)`
+- **New `/ctrl-design-review <file>` skill** — runs Nielsen + anti-pattern scanner against the CTRL design rubric
+- **New `/project <id>` generic switcher** — replaces 11 per-project skills (deleted)
+- **`/project-create` updated** with Step 6.5 so new projects appear in Admin + Tasks immediately
+- **Skill audit** — `skill-discord.md` (1,204 lines) and `skill-clickup.md` no longer auto-load on every CTRL session
+- **Brand portal fixes** — dual-location resolver, `Promise.allSettled`, empty-state UX, CTRL now appears
+- **Migration 42** (project_lists) + **Migration 43** (drop project_tasks after migrating Cavernborn's 19 rows to Google)
+- **`/api/tasks/cached-all`** single round-trip read replaces N+1 fetches
+- **Gmail.tsx setState bug fix** — archive/trash undo no longer double-fires under Strict Mode
+- **Rate limit bumped 500→5000/15min, JSON 429 body**
+- **114 tasks seeded** across 14 projects
+- **BatonDrop status updated to LIVE** + 9 post-launch monitoring tasks added
 
 ### In progress right now
+**Vertex AI setup.** Service account `ctrl-vertex@ctrl-493720.iam.gserviceaccount.com` created with `Vertex AI User` role. JSON key pasted into vault as `vertex_service_account`. Status: *"Vertex AI is not configured. Set vault keys vertex_service_account, vertex_project_id, and vertex_region to use it."* — two of three keys still missing.
 
-Nothing half-finished mid-edit. Last actions were two hot patches to issues the user reported after Home went live (vault-loop and slow-load). Both shipped, type-check clean (frontend + backend exit=0).
+### Pending / next steps (START HERE)
+1. **Add vault key** `vertex_project_id` = `ctrl-493720`
+2. **Add vault key** `vertex_region` = `us-central1`
+3. **Refresh Settings → AI Providers** — status should flip green
+4. **Test:** Design module → generate a small image
+5. **30 min later:** Cloud Console → Billing → confirm credit usage on `ctrl-493720` is non-zero
 
-### Pending / next steps (priority order)
-
-1. **Investigate the underlying 401 on Home load** — likely finance. Debounce hides the symptom but root cause not investigated.
-2. **Pin to today feature** (Session 2 of Home) — DB pins table + pin button across task surfaces + nightly midnight clear (~2h).
-3. **Mobile responsive pass for Home** — grid collapses but FocusRow row controls could be tighter on mobile.
-4. **CRM stage-badge + ContractsTab status-pill sanity check** — D2 agent flagged hex+alpha tints lost coloured backgrounds.
-5. `.pm-project-card-progress-fill` CSS class — invisible progress bar in ProjectsHome.tsx (pre-existed, just flagged).
-6. **xterm.js theme bridge** — 60 hex literals in ClaudeTab/BotTab/PageTerminal because xterm.js requires hex strings; need JS bridge reading computed CSS vars and rebuilding xterm theme on switch.
-7. **Tooltips on icon-only buttons** — audit-wide pass.
-8. **Fix the setState updater side-effect bug in `Gmail.tsx:201-256`** — handleArchive/handleTrash do side effects inside setEmails updater; fires twice in Strict Mode.
+All 5 are now Tasks in CTRL's list (high priority). BatonDrop has 9 post-launch tasks queued.
 
 ---
 
 ## ALL MODULES — STATUS
 
-| Module | Location | Status |
-|--------|----------|--------|
-| Home | `src/frontend/src/modules/home/` | NEW THIS SESSION — live, default tab |
-| Claude Tab | `src/frontend/src/modules/claude-tab/` | working, xterm hex literals deferred |
-| Gmail/Google | `src/frontend/src/modules/gmail/` | working + toast undo wired |
-| Tasks | `src/frontend/src/modules/tasks/` | working + toast undo wired + deep-link listener |
-| Projects | `src/frontend/src/modules/projects/` | working + drag-reorder + toast undo + deep-link listener |
-| Finance | `src/frontend/src/modules/finance/` | working — palette rationalised, !important war won |
-| Trading | `src/frontend/src/modules/trading/` | working — bot-bounce keyframe kept (status indicator, not anti-pattern) |
-| GitHub | `src/frontend/src/modules/github/` | working — language hex colours kept (external data) |
-| Cloudflare | `src/frontend/src/modules/cloudflare/` | working |
-| Brand Toolkit | `src/frontend/src/modules/brand-toolkit/` | working |
-| Settings | `src/frontend/src/modules/settings/` | working — Appearance section has legacy theme controls (dead code, ignored not deleted) |
-| Admin | `src/frontend/src/modules/admin/` | working — NEW Theme section as default tab |
-| Discord | (not built yet) | scoped in skill-discord.md v1 (4 channels) but not implemented |
+| Module | Location | Status | Notes |
+|--------|----------|--------|-------|
+| Home | src/frontend/src/modules/home/ | ✅ Widget grid v2 | 6 widgets, reads Google Tasks via project_lists |
+| Claude Tab | src/frontend/src/modules/claude-tab/ | ✅ Working | No changes |
+| Gmail/Google | src/frontend/src/modules/gmail/ | ✅ setState bug fixed | Archive/trash undo no longer double-fires |
+| Tasks | src/frontend/src/modules/tasks/ | ✅ Monday-clone | Mobile Games has 10 sub-games nested |
+| ~~Projects~~ | (removed) | ❌ Deleted | Module + nav gone; Home reads Google Tasks |
+| Finance | src/frontend/src/modules/finance/ | ✅ Working | No changes |
+| Trading | src/frontend/src/modules/trading/ | ✅ Working | No changes |
+| GitHub | src/frontend/src/modules/github/ | ✅ Working | No changes |
+| Cloudflare | src/frontend/src/modules/cloudflare/ | ✅ Working | No changes |
+| Brand Toolkit | src/frontend/src/modules/brand-toolkit/ | ✅ Resilient | Dual-location resolver + allSettled + empty-state UX; CTRL appears |
+| Settings | src/frontend/src/modules/settings/ | ✅ Vertex toggle present | AIProvidersSection live |
+| Admin | src/frontend/src/modules/admin/ | ✅ Big-card rebuild | Inline colour picker, sub-projects nested |
 
 ---
 
-## RECENT GIT COMMITS
+## CONTENT POPULATED THIS SESSION
 
-Control-Centre is **NOT a git repo** (no `.git` folder). The CTRL codebase is local-only.
-The auto-backup script in /afk attempted to push linked project repos via the `project_repos` DB table but the node script failed on bash escaping — skipped per skill (best-effort).
+| Project | Tasks | Brand | Knowledge |
+|---|---|---|---|
+| Personal | 3 | n/a | n/a (left as-is) |
+| BedBouncer | 11 | ✅ 5/5 | ✅ 14 files |
+| **CtrlPro** | 6 | ✅ 5/5 | (knowledge skipped per user) |
+| Mobile Games (parent) | — | — | 4 shared docs |
+| CTRL | 3+5 | ✅ 5/5 (new) | ✅ 9 files |
+| BatonDrop | 7+9 | ✅ 5/5 | ✅ 12 files |
+| WordDrop | 9 | ✅ 5/5 | ✅ 4 files |
+| Chess Music | 5 | ✅ 5/5 | ✅ 2 files |
+| **Homeland** | 5 | 0/5 | (left as-is per user) |
+| Cavernborn | 31 | ✅ 5/5 | ✅ 7 files |
+| CrunchBall | 6 | ✅ 5/5 | ✅ 2 files |
+| Stack Attack | 11 | ✅ 5/5 | 1 + shared |
+| Word Chain | 12 | ✅ 5/5 | 1 + shared |
+| Colour Flood | 12 | ✅ 5/5 | 1 + shared |
+| Reflex Ring | 12 | ✅ 5/5 | 1 + shared |
 
 ---
 
 ## OPEN ISSUES / KNOWN BUGS
 
-1. **Finance 401 on Home load** — symptom hidden by 2s debounce; root cause not investigated. Could indicate a race between vault unlock and downstream auth, or a specific endpoint needing a session.
-2. **Deep-link to collapsed project task** — if user has a project group collapsed in the Projects module, the focus listener may not find the row. There is a 10-try retry but no auto-expand of the collapsed group.
-3. **setState updater side-effect bug in Gmail.tsx** — handleArchive (line 201) and handleTrash (line 229) do toast.show, setTimeout, setActiveEmail inside the `setEmails(prev => ...)` updater. In React Strict Mode this fires the toast and timer TWICE per click. Functional but worth cleaning up.
-4. **Bulk operations in IntelSidebar have no undo** — by design (bulk reverse needs backend support not yet added). They use confirm dialog + success/error toast.
-5. **Legacy theme controls in Settings → Appearance** — dead code (no longer applies). Ignored, not deleted. Should be removed in a future cleanup.
-6. **STATUS.md is from 26 April** — quite stale, not updated this session. SESSION_STATE.md is the current snapshot.
+- **Vault re-locks on every backend restart.** Any ts-node-dev reload clears vault state. Re-unlock before testing protected endpoints.
+- **Rate limit was bumped** to 5000/15min after one bust. JSON 429 body now (so frontend parser doesn't crash on "Too many r..." text).
+- **WordDrop folder rename pending** — Windows file lock won't release. Cosmetic only — no code depends on path.
+- **`/project-create` JSON-escape gotcha** — `node -e "..."` with Windows backslashes via MSYS bash mangles them. Always write to a temp `.cjs` file. Documented in skill.
+- **`.home-card / .home-focus` CSS classes (~250 lines) dead** after widget v2 — backlog cleanup.
+- **Admin.tsx heavy inline styles** — backlog migration to admin.css.
 
 ---
 
 ## KEY DECISIONS MADE THIS SESSION
 
-- **Neon Dark canonical**, Linear preserved as switchable preset.
-- **Theme controls in Admin → Theme** (not Settings).
-- **Theme switcher uses CSS custom properties at runtime** — no rebuild needed.
-- **Toast undo = delayed-commit pattern** (not reversal) — avoids needing backend reverse endpoints.
-- **Project sort_order = priority** — exposed via Project.sortOrder, PATCHable, bulk reorder endpoint.
-- **Deep-link via global window event** + `data-task-id` attribute on rows.
-- **Home is the default tab** (was a placeholder before).
-- **Chart palettes use `--chart-1..8` tokens** in canonical order (pink/cyan/lime/orange/purple/amber/yellow/red).
-- **`ctrl:vault-locked` event debounced** to once per 2s.
-- **For neon, glow flourish kept** but moved to `.btn--hero` variant (reserved for at most one CTA per screen).
+- **Tasks are Google Tasks-backed, not local.** `project_tasks` table dropped. Each project owns one Google Tasks list.
+- **Brand files have two valid locations** — `brand/guidelines/<file>` (canonical) OR `brand/<file>` (legacy). Dual resolver reads both.
+- **Promise.allSettled, not Promise.all,** for any multi-fetch screen. Same root cause blanked Tasks + Brand in this session.
+- **Project colours use `chart-N` slots,** not hex. Theme-aware. Auto-assigned.
+- **Mobile Games is a container project.** No own tasks/brand. Sub-games inherit shared docs.
+- **Per-project switcher skills gone.** One generic `/project <id>` reads the DB.
+- **Vertex AI for Gemini** to use the £225 GCP credit. Default stays AI Studio until toggle flips.
 
 ---
 
-## BACKEND API ENDPOINTS ADDED THIS SESSION
+## BACKEND API ENDPOINTS ADDED
 
 ```
-PATCH /api/projects/list/reorder
-  body: { ids: string[] }   // new order, sort_order set to i*1000
-  Used by Projects module drag-reorder UI.
-
-PATCH /api/projects/list/:id
-  body now also accepts: { sortOrder: number }
-  Per-project sort_order updates (less common; reorder endpoint is preferred for bulk).
+GET   /api/tasks/cached-all              — all local-cached tasks, one round-trip
+GET   /api/tasks/project-lists           — list project→Google list mappings
+POST  /api/tasks/project-lists/ensure    — auto-create Google list for project
+POST  /api/tasks/project-lists/ensure-all — backfill for every project
+POST  /api/tasks/migrate-legacy          — one-shot project_tasks → Google Tasks
 ```
 
 ---
 
-## DATABASE CHANGES THIS SESSION
+## DATABASE CHANGES
 
-None — `sort_order` column already existed on projects table from prior migrations. The Project type and toProject converter were updated to surface the existing column.
-
-`.ctrl-config.json` schema extension (config blob, not DB):
-
-```json
-preferences.appearance.theme = {
-  "preset": "neon-dark",
-  "accent": null,
-  "radius": null,
-  "density": null
-}
-```
+- **Migration 42** — `project_lists` table: (project_id PK, list_id UNIQUE, list_title, created_at, updated_at) + index on list_id
+- **Migration 43** — `DROP TABLE IF EXISTS project_tasks` (after migrating Cavernborn)
+- `tasks.priority` column (migration 41) now actively used — round-trip through Google notes
 
 ---
 
 ## IMPORTANT CONTEXT FOR NEXT SESSION
 
-- **The whole CSS palette switched to neon-pink** as primary. The legacy `--blue` token now ALIASES to neon-pink. Any code that uses `var(--blue)` is automatically getting pink. This is intentional, not a bug.
-- **The 100 hex literals remaining in `.tsx` are ALL legitimate data** — annotated with comments by the D2 agent. Future audits won't flag them. Don't strip them.
-- **Home does N+1 requests for Google Tasks** (one per list). Acceptable for v1 but worth a backend "all tasks" endpoint someday.
-- **The vault-lock debounce is a defensive fix** — it stops the loop but doesn't solve why finance 401s in the first place. If you investigate the underlying auth issue, it's safe to remove the debounce eventually.
-- **STATUS.md is very stale** (from 26 April). SESSION_STATE.md is the current snapshot.
-- **BatonDrop is awaiting Google Play review** — submitted 2026-05-17. If it bounces, the playbook is in `batondrop/knowledge/production-application-2026-05-17.md`.
-- **The toast pattern has a side-effect bug in Gmail.tsx** that should be cleaned up — it's functional but fires toasts twice in Strict Mode.
+- **Vault re-locks on backend restart.** First action: unlock.
+- **Rate limit 5000/15min, JSON 429.** Don't burn through on bulk scripts.
+- **Bash `node -e "..."` mangles Windows backslashes.** Use temp `.cjs` files.
+- **ts-node-dev wedges sometimes.** Kill worker; supervisor usually respawns.
+- **`/project-create` now materialises in Spine DB automatically.** No manual Admin click needed.
+- **Shared CTRL Play subsystems** (gold coin, leaderboard Worker, daily login, push notifications, tutorial) live in `Mobile-Games/knowledge/decisions/shared-systems.md` + `architecture/leaderboard-worker.md`. Build once in Word Chain (Week 1), other 3 games inherit.
+- **BatonDrop is LIVE.** Keep an eye on Crashlytics + Day-1 retention + reviews.
 
 ---
 
@@ -215,17 +167,34 @@ D:\AI Work\START-ALL.bat
 ```
 
 Or manually:
-- Backend: `cd D:\AI Work\Control-Centre && npm run dev:backend`
-- Frontend: `cd D:\AI Work\Control-Centre && npm run dev:frontend`
+- Backend: `cd D:\AI Work\Control-Centre\src\backend && npm run dev`
+- Frontend: `cd D:\AI Work\Control-Centre\src\frontend && npm run dev`
 - Terminal server: `cd D:\AI Work\Control-Centre\src\terminal-server && npm run dev`
+
+(Root `npm run dev:backend` doesn't exist — go into `src/backend/`.)
 
 ---
 
-## PROJECTS OUTSIDE CTRL (for full context)
+## PROJECTS — COMPLETE LIST
 
-- **BatonDrop** — drop-reflex casual game, v2.0.0 submitted to Google Play production 2026-05-17, awaiting review. RN 0.85.2.
-- **WordDrop** — word puzzle, planning stage / brand files updated, ready to build.
-- **Cavernborn** — dark fantasy idle RPG, planning, CTRL project created, RN app not yet initialised.
-- **BedBouncer** — ESP32 smart alarm, website live, social media is next.
-- **CTRLPro** — hospitality SaaS dashboard, planning, first client conversation pending.
-- **Lane7 hard line** — John works at Lane7 (competitive socialising). Never use Lane7 contacts/data/IP for any of his other projects. Restated in CLAUDE.md every session.
+**Standalone:**
+- **CTRL** — this system. Brand portal now populated.
+- **BedBouncer** — ESP32 smart alarm. Stripe + £5 reservation + Meta ads + Kickstarter prep all in Tasks.
+- **CtrlPro** — hospitality SaaS. Planning phase, first client conversation needed.
+- **Personal** — catch-all.
+
+**Mobile Games (parent container):**
+- **BatonDrop** — 🎉 LIVE on Google Play 2026-05-19
+- **WordDrop** — ready to build (GDD complete)
+- **Cavernborn** — RN scaffolded, Phase 2 next
+- **CrunchBall** — browser prototype, Phase 1 Session 1 done
+- **Chess Music** — concept phase
+- **Homeland** — concept phase (intentionally minimal)
+- **Word Chain** — scaffolded (first of 4 new casual games)
+- **Stack Attack** — scaffolded (build second)
+- **Colour Flood** — scaffolded (build third — British "Colour" rule)
+- **Reflex Ring** — scaffolded (build fourth — cross-promote BatonDrop)
+
+---
+
+*End of handover. See you when you're back.*
