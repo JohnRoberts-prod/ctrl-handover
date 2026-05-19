@@ -1,6 +1,6 @@
 # CTRL Project Handover
-*Last updated: 2026-05-19 (end of long session)*
-*Session ended: Vertex AI setup partway through — service account JSON in vault, two more vault keys pending. Also: BatonDrop got approved for Google Play production today.*
+*Last updated: 2026-05-19 (late evening) UTC*
+*Session ended: completed the Reflex Ring playable prototype + APK (4th and final casual-game prototype), Open Design tab embedded in CTRL, and ctrlplay-website foundation*
 
 ---
 
@@ -8,59 +8,53 @@
 
 You are Claude web browser picking up a CTRL development session.
 John Roberts is the developer. Read this entire document before responding.
-When John returns, he will paste in any files or context from the web session.
 
 The CTRL codebase is at: `D:\AI Work\Control-Centre\`
 Backend: Node.js + Express + TypeScript on port 3001
 Frontend: React 18 + Vite + TypeScript on port 5173
 Terminal server: node-pty WebSocket server on port 3002
-Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db`
+Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db` — WAL mode + synchronous=NORMAL already on
 
----
-
-## 🎉 HEADLINE NEWS
-
-**BatonDrop is LIVE on Google Play (approved 2026-05-19).** First CTRL Play game to clear the bar. Submitted 2026-05-17, 2-day turnaround. All post-launch monitoring tasks (review responses, Crashlytics, AdMob fill rate, Day-1 retention check) are seeded in BatonDrop's Tasks list — start there.
+Plus sibling repos: `D:\AI Work\Mobile-Games\` (RN games + Vite prototypes), `D:\AI Work\BedBouncer\`, `D:\AI Work\ctrlplay-website\` (new this session), `D:\AI Work\open-design\` (cloned this session).
 
 ---
 
 ## WHAT WE WERE BUILDING THIS SESSION
 
-A multi-hour session that touched almost every CTRL module. Final activity before /afk: configuring Vertex AI so Gemini calls consume the £225 GCP credit on project `ctrl-493720`. The service account is created and its JSON key is in the vault under `vertex_service_account`. The Settings → AI Providers status page reports it needs **two more vault keys** (`vertex_project_id` + `vertex_region`) before flipping to "configured" — those are the first clicks tomorrow.
+This was a long mixed-bag session. Five distinct workstreams landed:
+
+1. **Reflex Ring prototype** — full Vite + React + TS playable prototype + Capacitor APK, fourth (and final) casual-game in the portfolio after Colour Flood and Stack Attack earlier in the day. All 11 wireframe screens + 3 shared subsystems wired to a real ring-rotation engine.
+2. **Open Design tab in CTRL** — a new 5th sub-tab inside the existing Design module that spawns `pnpm tools-dev` in the sibling `D:\AI Work\open-design\` repo and embeds it via iframe on localhost:3000. Includes new backend service, routes, WebSocket log stream, and frontend panel with 5 visible states.
+3. **ctrlplay-website foundation** — new repo at `D:\AI Work\ctrlplay-website\` with `public/games.json`, landing page, Cloudflare `_headers`, and full deploy README. Ready to push to GitHub + connect to Cloudflare Pages.
+4. **BatonDrop extra_life fix** — user reported the "extra life" baton was appearing far too often despite "extremely rare" copy. Weight 100 → 12, plus skip-spawn-at-full-lives. Committed + pushed to `ctrl-batondrop`.
+5. **Open Design installed** — cloned `nexu-io/open-design`, ran `pnpm install` (12 min), confirmed it loads in CTRL's iframe.
+
+Final activity: user invoked `/afk`. No work in flight.
 
 ---
 
 ## CURRENT BUILD STATE
 
 ### Recently completed (this session)
-- **Tasks tab — Monday-clone rebuild** (Google Tasks-backed, project hierarchy with Mobile Games as parent, 10 sub-games nested, collapsed by default, QuickAdd per group, expandable rows with notes/subtasks/priority/due chips)
-- **Projects tab removed entirely** — Home rewritten to read tasks from Google Tasks via `project_lists` mapping
-- **Home — widget grid v2** — 6 widgets (Finance, Today, Priority, This Week, Pulse, Recent emails) in a 12-col CSS grid, responsive collapse to 6-col on mobile
-- **Admin Projects — big-card rebuild** — website/code/tasks slots, inline colour picker, status badges, sub-projects indented (no side-stripe)
-- **Project colours — chart-N palette** — auto-assigned on creation, theme-aware via `var(--chart-N)`
-- **New `/ctrl-design-review <file>` skill** — runs Nielsen + anti-pattern scanner against the CTRL design rubric
-- **New `/project <id>` generic switcher** — replaces 11 per-project skills (deleted)
-- **`/project-create` updated** with Step 6.5 so new projects appear in Admin + Tasks immediately
-- **Skill audit** — `skill-discord.md` (1,204 lines) and `skill-clickup.md` no longer auto-load on every CTRL session
-- **Brand portal fixes** — dual-location resolver, `Promise.allSettled`, empty-state UX, CTRL now appears
-- **Migration 42** (project_lists) + **Migration 43** (drop project_tasks after migrating Cavernborn's 19 rows to Google)
-- **`/api/tasks/cached-all`** single round-trip read replaces N+1 fetches
-- **Gmail.tsx setState bug fix** — archive/trash undo no longer double-fires under Strict Mode
-- **Rate limit bumped 500→5000/15min, JSON 429 body**
-- **114 tasks seeded** across 14 projects
-- **BatonDrop status updated to LIVE** + 9 post-launch monitoring tasks added
+
+- **Reflex Ring prototype** — `Mobile-Games/games/reflexring/app/` (Vite app), APK at `Mobile-Games/games/reflexring/builds/reflexring-debug-2026-05-19.apk` (~3.9MB). Engine in `src/engine/game.ts` is pure functions (tick / tap / scoring / tier escalation). Ring renders as SVG via `RingCanvas.tsx`. All 11 wireframe screens implemented (Splash, Home, Game with Classic/Sprint/Daily modes, Game-over, Leaderboard, Settings, More Games, Tutorial, Daily Login modal, Achievement toast).
+- **Open Design tab in CTRL** — `src/backend/src/services/open-design.service.ts` (singleton service, mirrors MetroService), `src/backend/src/routes/open-design.routes.ts` (start/stop/status + `OPEN_DESIGN_WS_PATH`), wired into `server.ts`. Frontend at `src/frontend/src/modules/design/components/OpenDesign/` (4 files: panel, service, css, index).
+- **ctrlplay-website bootstrapped** — landing page, games.json with BatonDrop seeded, Cloudflare Pages `_headers` (5min cache on games.json, 30d immutable on icons, CORS open), full README.
+- **BatonDrop extra_life rebalance** — three TS files touched in `Mobile-Games/games/batondrop/app/src/`, auto-committed + pushed.
+- **Open Design installed** at `D:\AI Work\open-design\` and verified running inside CTRL's iframe.
+- **`--no-open` flag** added to OpenDesignService default `startCommand` so the dev server doesn't auto-launch a duplicate browser window.
 
 ### In progress right now
-**Vertex AI setup.** Service account `ctrl-vertex@ctrl-493720.iam.gserviceaccount.com` created with `Vertex AI User` role. JSON key pasted into vault as `vertex_service_account`. Status: *"Vertex AI is not configured. Set vault keys vertex_service_account, vertex_project_id, and vertex_region to use it."* — two of three keys still missing.
+- **Nothing functional.** All five workstreams ended cleanly.
 
-### Pending / next steps (START HERE)
-1. **Add vault key** `vertex_project_id` = `ctrl-493720`
-2. **Add vault key** `vertex_region` = `us-central1`
-3. **Refresh Settings → AI Providers** — status should flip green
-4. **Test:** Design module → generate a small image
-5. **30 min later:** Cloud Console → Billing → confirm credit usage on `ctrl-493720` is non-zero
+### Pending / next steps
 
-All 5 are now Tasks in CTRL's list (high priority). BatonDrop has 9 post-launch tasks queued.
+1. **Install Reflex Ring APK on phone** — built but phone disconnected before adb install. Reconnect, `adb devices`, then `adb install -r "D:\AI Work\Mobile-Games\games\reflexring\builds\reflexring-debug-2026-05-19.apk"`.
+2. **Build + ship BatonDrop v1.9.7** with the extra_life fix. Bump versionCode 20→21, versionName 1.9.6→1.9.7, `cd app/android && ./gradlew bundleRelease`, upload signed AAB to Play Console internal testing → production.
+3. **Push `ctrlplay-website` to GitHub** as `JohnRoberts-prod/ctrlplay-website`, connect to Cloudflare Pages (build cmd empty, output dir `public`).
+4. **(Carried over) Vertex AI vault keys** — add `vertex_project_id=ctrl-493720` and `vertex_region=us-central1` via Settings → Vault. From the earlier session.
+5. **Word Chain prototype** — only remaining casual-game prototype not yet built. Same Vite + React + TS + Capacitor pipeline as the other three. Port 5183.
+6. **Retrofit Colour Flood + Stack Attack `MoreGames.tsx`** to use the shared `crossPromo.service.ts` per CROSS-PROMO-SYSTEM.md — DEFERRED by user: "leave that, apply next time we change those games."
 
 ---
 
@@ -68,95 +62,137 @@ All 5 are now Tasks in CTRL's list (high priority). BatonDrop has 9 post-launch 
 
 | Module | Location | Status | Notes |
 |--------|----------|--------|-------|
-| Home | src/frontend/src/modules/home/ | ✅ Widget grid v2 | 6 widgets, reads Google Tasks via project_lists |
-| Claude Tab | src/frontend/src/modules/claude-tab/ | ✅ Working | No changes |
-| Gmail/Google | src/frontend/src/modules/gmail/ | ✅ setState bug fixed | Archive/trash undo no longer double-fires |
-| Tasks | src/frontend/src/modules/tasks/ | ✅ Monday-clone | Mobile Games has 10 sub-games nested |
-| ~~Projects~~ | (removed) | ❌ Deleted | Module + nav gone; Home reads Google Tasks |
-| Finance | src/frontend/src/modules/finance/ | ✅ Working | No changes |
-| Trading | src/frontend/src/modules/trading/ | ✅ Working | No changes |
-| GitHub | src/frontend/src/modules/github/ | ✅ Working | No changes |
-| Cloudflare | src/frontend/src/modules/cloudflare/ | ✅ Working | No changes |
-| Brand Toolkit | src/frontend/src/modules/brand-toolkit/ | ✅ Resilient | Dual-location resolver + allSettled + empty-state UX; CTRL appears |
-| Settings | src/frontend/src/modules/settings/ | ✅ Vertex toggle present | AIProvidersSection live |
-| Admin | src/frontend/src/modules/admin/ | ✅ Big-card rebuild | Inline colour picker, sub-projects nested |
+| Home | src/frontend/src/modules/home/ | Working | Widget grid rebuilt earlier session |
+| Claude Tab | src/frontend/src/modules/claude-tab/ | Working | Sidebar panel |
+| Gmail/Google | src/frontend/src/modules/gmail/ | Working | setState bug fixed earlier session |
+| Tasks | src/frontend/src/modules/tasks/ | Working | Rebuilt Monday-style earlier session |
+| Finance | src/frontend/src/modules/finance/ | Working | |
+| Trading | src/frontend/src/modules/trading/ | Working | |
+| GitHub | src/frontend/src/modules/github/ | Working | |
+| Cloudflare | src/frontend/src/modules/cloudflare/ | Working | |
+| Brand Toolkit | src/frontend/src/modules/brand-toolkit/ | Working | Dual-location resolver earlier session |
+| Design | src/frontend/src/modules/design/ | Working | **NEW: 5th sub-tab "Open Design" embeds the sibling repo** |
+| Settings | src/frontend/src/modules/settings/ | Working | Vertex AI status still red pending vault keys |
+| Admin | src/frontend/src/modules/admin/ | Working | ProjectCard rebuild earlier session |
 
 ---
 
-## CONTENT POPULATED THIS SESSION
+## FILES CREATED OR MODIFIED THIS SESSION
 
-| Project | Tasks | Brand | Knowledge |
-|---|---|---|---|
-| Personal | 3 | n/a | n/a (left as-is) |
-| BedBouncer | 11 | ✅ 5/5 | ✅ 14 files |
-| **CtrlPro** | 6 | ✅ 5/5 | (knowledge skipped per user) |
-| Mobile Games (parent) | — | — | 4 shared docs |
-| CTRL | 3+5 | ✅ 5/5 (new) | ✅ 9 files |
-| BatonDrop | 7+9 | ✅ 5/5 | ✅ 12 files |
-| WordDrop | 9 | ✅ 5/5 | ✅ 4 files |
-| Chess Music | 5 | ✅ 5/5 | ✅ 2 files |
-| **Homeland** | 5 | 0/5 | (left as-is per user) |
-| Cavernborn | 31 | ✅ 5/5 | ✅ 7 files |
-| CrunchBall | 6 | ✅ 5/5 | ✅ 2 files |
-| Stack Attack | 11 | ✅ 5/5 | 1 + shared |
-| Word Chain | 12 | ✅ 5/5 | 1 + shared |
-| Colour Flood | 12 | ✅ 5/5 | 1 + shared |
-| Reflex Ring | 12 | ✅ 5/5 | 1 + shared |
+### CTRL repo (`D:\AI Work\Control-Centre\`)
+```
+src/backend/src/services/open-design.service.ts        — NEW
+src/backend/src/routes/open-design.routes.ts           — NEW
+src/backend/src/server.ts                              — added Open Design import, route mount, WS server
+src/frontend/src/modules/design/components/OpenDesign/OpenDesignPanel.tsx  — NEW
+src/frontend/src/modules/design/components/OpenDesign/openDesign.service.ts — NEW
+src/frontend/src/modules/design/components/OpenDesign/open-design.css     — NEW
+src/frontend/src/modules/design/components/OpenDesign/index.ts            — NEW
+src/frontend/src/modules/design/Design.tsx             — 5th tab + Palette import + saved-tab parser update
+SESSION_STATE.md                                       — fully rewritten
+LEARNINGS.md                                           — 4 new entries
+```
+
+### ctrlplay-website (`D:\AI Work\ctrlplay-website\`)
+```
+README.md                — NEW (Cloudflare Pages setup + game-launch procedure)
+.gitignore               — NEW
+public/index.html        — NEW (landing page)
+public/games.json        — NEW (BatonDrop seeded as the only live entry)
+public/_headers          — NEW (Cloudflare cache rules + CORS)
+public/icons/README.md   — NEW (icon spec + per-game checklist)
+```
+
+### BatonDrop (`D:\AI Work\Mobile-Games\games\batondrop\`)
+```
+app/src/constants/game.ts        — extra_life weight 100 → 12 with lock comment
+app/src/engine/BatonSpawner.ts   — pickSpecial(level, livesAtCap), buildBaton + spawnBaton signature update
+app/src/engine/GameEngine.ts     — loadLane() passes lives >= LIVES_PER_RUN to spawnBaton
+SESSION_STATE.md                 — fully rewritten
+```
+
+### Reflex Ring (`D:\AI Work\Mobile-Games\games\reflexring\`)
+```
+design/wireframes/             — NEW (Claude Design bundle + SOURCE.md)
+app/ (entire app)              — NEW (Vite + React + TS + Capacitor)
+builds/reflexring-debug-2026-05-19.apk  — NEW (~3.9MB)
+builds/README.md               — NEW (sideload instructions)
+SESSION_STATE.md               — fully rewritten
+```
+
+### Sibling repo (cloned this session)
+```
+D:/AI Work/open-design/        — git clone https://github.com/nexu-io/open-design (4442 files)
+                                  pnpm install completed (12 min)
+```
+
+---
+
+## RECENT GIT COMMITS
+
+BatonDrop (the one repo that pushed this session — others use folder-only layout):
+```
+09a91b5  Auto-backup: 2026-05-19         <- extra_life fix
+b704d89  Bump to v2.0.0 (versionCode 21)
+cc316f3  How to Play: guard catch impact against multi-fire
+865def9  How to Play: animated Basics demo using real game assets
+6154366  Loading screen: replace spinner with pulsing logo + amber halo
+```
 
 ---
 
 ## OPEN ISSUES / KNOWN BUGS
 
-- **Vault re-locks on every backend restart.** Any ts-node-dev reload clears vault state. Re-unlock before testing protected endpoints.
-- **Rate limit was bumped** to 5000/15min after one bust. JSON 429 body now (so frontend parser doesn't crash on "Too many r..." text).
-- **WordDrop folder rename pending** — Windows file lock won't release. Cosmetic only — no code depends on path.
-- **`/project-create` JSON-escape gotcha** — `node -e "..."` with Windows backslashes via MSYS bash mangles them. Always write to a temp `.cjs` file. Documented in skill.
-- **`.home-card / .home-focus` CSS classes (~250 lines) dead** after widget v2 — backlog cleanup.
-- **Admin.tsx heavy inline styles** — backlog migration to admin.css.
+- **Reflex Ring APK not installed on phone yet** — phone disconnected during build. Reconnect + adb install when ready.
+- **BatonDrop fix not yet shipped** — three TS files committed but no new AAB built. Player-facing fix needs Play Store push.
+- **Vertex AI vault keys still missing** — from earlier session. Two vault entries pending, then Vertex pathway goes live for the £225 GCP credit.
+- **Pre-existing TS errors in `GoogleSignInService.ts`** in BatonDrop — unrelated to this session's work, surfaced during tsc check.
+- **Cross-promo retrofit deferred** for Colour Flood + Stack Attack `MoreGames.tsx`. Both currently use hardcoded game lists; the shared `crossPromo.service.ts` pattern from `CROSS-PROMO-SYSTEM.md` should replace them at next per-game touch.
 
 ---
 
 ## KEY DECISIONS MADE THIS SESSION
 
-- **Tasks are Google Tasks-backed, not local.** `project_tasks` table dropped. Each project owns one Google Tasks list.
-- **Brand files have two valid locations** — `brand/guidelines/<file>` (canonical) OR `brand/<file>` (legacy). Dual resolver reads both.
-- **Promise.allSettled, not Promise.all,** for any multi-fetch screen. Same root cause blanked Tasks + Brand in this session.
-- **Project colours use `chart-N` slots,** not hex. Theme-aware. Auto-assigned.
-- **Mobile Games is a container project.** No own tasks/brand. Sub-games inherit shared docs.
-- **Per-project switcher skills gone.** One generic `/project <id>` reads the DB.
-- **Vertex AI for Gemini** to use the £225 GCP credit. Default stays AI Studio until toggle flips.
+- **Bold Arcade is the locked CTRL Play house style** — three independent Claude Design sessions (Colour Flood -> Stack Attack -> Reflex Ring) all recommended Variation B. Pattern is provable.
+- **Open Design integrates as a sub-tab** of the existing Design module, not a separate top-level page. Keeps "Design" as one mental concept.
+- **`--no-open` in Open Design startCommand** — added after the dev server kept auto-launching a duplicate browser window alongside the CTRL iframe.
+- **extra_life weight = 12** (user chose from a 3-option menu). Targets ~1% of all batons at L20+ to match "extremely rare" copy.
+- **extra_life smart spawn** — skip the RARE pool entirely when `lives === LIVES_PER_RUN`. When it appears, it always means something.
+- **Cross-promo retrofit DEFERRED** to next per-game touch (user call).
+- **CTRL DB already has WAL + synchronous=NORMAL + 32MB cache** — no perf tuning needed.
+- **Casual prototype pattern is reproducible** — Vite + React + TS + Capacitor + same folder shape works for any of the four casual games. Ports 5180/5181/5182 used, 5183 reserved for Word Chain.
 
 ---
 
-## BACKEND API ENDPOINTS ADDED
+## BACKEND API ENDPOINTS ADDED THIS SESSION
 
 ```
-GET   /api/tasks/cached-all              — all local-cached tasks, one round-trip
-GET   /api/tasks/project-lists           — list project→Google list mappings
-POST  /api/tasks/project-lists/ensure    — auto-create Google list for project
-POST  /api/tasks/project-lists/ensure-all — backfill for every project
-POST  /api/tasks/migrate-legacy          — one-shot project_tasks → Google Tasks
+GET  /api/open-design/status   -> installed + running + responding + port + path + pid + startedAt
+POST /api/open-design/start    -> spawn pnpm tools-dev --no-open in D:/AI Work/open-design
+POST /api/open-design/stop     -> taskkill /T /F the process tree
+WS   /api/open-design/logs     -> rolling 200-line log buffer streamed via WebSocket
 ```
+
+All routes gated by `requireVaultUnlocked`. Service follows the exact shape of `MetroService` (singleton, taskkill /T /F on Windows, HTTP probe for "responding" status).
 
 ---
 
-## DATABASE CHANGES
+## DATABASE CHANGES THIS SESSION
 
-- **Migration 42** — `project_lists` table: (project_id PK, list_id UNIQUE, list_title, created_at, updated_at) + index on list_id
-- **Migration 43** — `DROP TABLE IF EXISTS project_tasks` (after migrating Cavernborn)
-- `tasks.priority` column (migration 41) now actively used — round-trip through Google notes
+None. No new migrations, no schema changes, no new tables. SQLite already had WAL on and 93 indexes covering the hot query paths.
 
 ---
 
 ## IMPORTANT CONTEXT FOR NEXT SESSION
 
-- **Vault re-locks on backend restart.** First action: unlock.
-- **Rate limit 5000/15min, JSON 429.** Don't burn through on bulk scripts.
-- **Bash `node -e "..."` mangles Windows backslashes.** Use temp `.cjs` files.
-- **ts-node-dev wedges sometimes.** Kill worker; supervisor usually respawns.
-- **`/project-create` now materialises in Spine DB automatically.** No manual Admin click needed.
-- **Shared CTRL Play subsystems** (gold coin, leaderboard Worker, daily login, push notifications, tutorial) live in `Mobile-Games/knowledge/decisions/shared-systems.md` + `architecture/leaderboard-worker.md`. Build once in Word Chain (Week 1), other 3 games inherit.
-- **BatonDrop is LIVE.** Keep an eye on Crashlytics + Day-1 retention + reviews.
+1. **Open Design starts via the new tab**, not from a terminal. If it won't start, the first place to look is the WebSocket log stream (visible in the "starting" view) — likely either pnpm not on PATH or port 3000 in use. Service falls back to safe defaults if `.ctrl-config.json` has no `openDesign` key.
+2. **Open Design iframe loads localhost:3000.** If the iframe is blank but the "open in browser" button works, it's an X-Frame-Options header on Open Design's dev server. Fix lives in `D:\AI Work\open-design\` (NOT in CTRL), per the spec.
+3. **BatonDrop is LIVE on Play Store** (approved 2026-05-19 earlier). The extra_life fix is committed but not shipped — needs versionCode bump + signed AAB build + Play Console upload before users see it. 3-layer keystore backup pattern documented in `project_keystore_backups.md` memory.
+4. **ctrlplay-website is a fresh repo** at `D:\AI Work\ctrlplay-website\` — has `.gitignore` but no `.git` yet. Init + push when ready.
+5. **Reflex Ring engine** is fully spec-locked: ±2° forgiveness, 12° zone minimum, 0.45s speed floor, `onPointerDown` for tap. Don't change those without re-reading the GDD.
+6. **Pre-existing BatonDrop TS errors** in `GoogleSignInService.ts` are not from this session. They've been there for weeks. Don't waste time on them unless asked.
+7. **The `nexu-io/open-design` repo is real** — 4442 files, pnpm 10.33.2. pnpm install reports two harmless warnings (missing `.EXE` for `od` CLI bin, ignored build scripts for core-js/sharp/etc.) — those are fine.
+8. **WSL Bash on Windows can mangle backslashes in `node -e "..."`** — when scripting Windows path operations, write to a temp `.cjs` file via the Write tool, then `node /path/to/file.cjs`. The afk-push-repos.cjs script in `/tmp` uses this pattern.
 
 ---
 
@@ -167,34 +203,29 @@ D:\AI Work\START-ALL.bat
 ```
 
 Or manually:
-- Backend: `cd D:\AI Work\Control-Centre\src\backend && npm run dev`
-- Frontend: `cd D:\AI Work\Control-Centre\src\frontend && npm run dev`
+- Backend: `cd D:\AI Work\Control-Centre && npm run dev:backend`
+- Frontend: `cd D:\AI Work\Control-Centre && npm run dev:frontend`
 - Terminal server: `cd D:\AI Work\Control-Centre\src\terminal-server && npm run dev`
 
-(Root `npm run dev:backend` doesn't exist — go into `src/backend/`.)
+To run Reflex Ring locally instead of via APK:
+```
+cd D:\AI Work\Mobile-Games\games\reflexring\app && npm run dev
+```
+Same for Colour Flood (5180) and Stack Attack (5181).
+
+To start Open Design separately (it is just a sibling repo):
+```
+cd D:\AI Work\open-design && pnpm tools-dev --no-open
+```
 
 ---
 
-## PROJECTS — COMPLETE LIST
+## PROJECTS OUTSIDE CTRL (for full context)
 
-**Standalone:**
-- **CTRL** — this system. Brand portal now populated.
-- **BedBouncer** — ESP32 smart alarm. Stripe + £5 reservation + Meta ads + Kickstarter prep all in Tasks.
-- **CtrlPro** — hospitality SaaS. Planning phase, first client conversation needed.
-- **Personal** — catch-all.
-
-**Mobile Games (parent container):**
-- **BatonDrop** — 🎉 LIVE on Google Play 2026-05-19
-- **WordDrop** — ready to build (GDD complete)
-- **Cavernborn** — RN scaffolded, Phase 2 next
-- **CrunchBall** — browser prototype, Phase 1 Session 1 done
-- **Chess Music** — concept phase
-- **Homeland** — concept phase (intentionally minimal)
-- **Word Chain** — scaffolded (first of 4 new casual games)
-- **Stack Attack** — scaffolded (build second)
-- **Colour Flood** — scaffolded (build third — British "Colour" rule)
-- **Reflex Ring** — scaffolded (build fourth — cross-promote BatonDrop)
-
----
-
-*End of handover. See you when you're back.*
+- **BatonDrop** — LIVE on Google Play (com.batondrop, approved 2026-05-19). extra_life fix committed locally, needs versionCode bump + signed AAB before next ship.
+- **Reflex Ring / Stack Attack / Colour Flood** — Vite browser prototypes + sideloadable debug APKs. Ports 5180-5182. Not yet ported to RN 0.85 (the production target).
+- **Word Chain** — folder scaffold only. Pattern proven by the other three casuals; ~half-day to clone the pipeline.
+- **BedBouncer** — ESP32 smart alarm, brand portal complete, website live at bedbouncer.co.uk. Quiet this session.
+- **CtrlPro / Homeland / Personal** — paused per user instruction earlier. No work this session.
+- **ctrlplay-website** — NEW this session. Public-facing landing page + cross-promo registry. Ready to push to GitHub + connect to Cloudflare Pages.
+- **open-design** — sibling tool repo (nexu-io/open-design). Cloned + installed this session. CTRL embeds it via iframe but never owns its code.
