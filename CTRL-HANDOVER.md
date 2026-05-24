@@ -1,6 +1,6 @@
 # CTRL Project Handover
-*Last updated: 2026-05-19 (late evening) UTC*
-*Session ended: completed the Reflex Ring playable prototype + APK (4th and final casual-game prototype), Open Design tab embedded in CTRL, and ctrlplay-website foundation*
+*Last updated: 2026-05-24 17:35 UTC*
+*Session ended: After building Stack Attack release APK v0.13 (per-world bar geometry + world bg in game).*
 
 ---
 
@@ -8,195 +8,216 @@
 
 You are Claude web browser picking up a CTRL development session.
 John Roberts is the developer. Read this entire document before responding.
+When John returns, he will paste in any files or context from the web session.
 
 The CTRL codebase is at: `D:\AI Work\Control-Centre\`
 Backend: Node.js + Express + TypeScript on port 3001
 Frontend: React 18 + Vite + TypeScript on port 5173
 Terminal server: node-pty WebSocket server on port 3002
-Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db` — WAL mode + synchronous=NORMAL already on
+Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db`
 
-Plus sibling repos: `D:\AI Work\Mobile-Games\` (RN games + Vite prototypes), `D:\AI Work\BedBouncer\`, `D:\AI Work\ctrlplay-website\` (new this session), `D:\AI Work\open-design\` (cloned this session).
+**HEADS UP:** This session was 100% on the **Stack Attack** mobile game (one of
+the CTRL Play mobile titles), not the CTRL Control-Centre app itself. No CTRL
+code was touched. Sections below for CTRL reflect the LAST known state from
+STATUS.md (26 Apr 2026), not anything that changed this session.
 
 ---
 
 ## WHAT WE WERE BUILDING THIS SESSION
 
-This was a long mixed-bag session. Five distinct workstreams landed:
+Per-world theming for the Stack Attack game screen. Three jobs:
 
-1. **Reflex Ring prototype** — full Vite + React + TS playable prototype + Capacitor APK, fourth (and final) casual-game in the portfolio after Colour Flood and Stack Attack earlier in the day. All 11 wireframe screens + 3 shared subsystems wired to a real ring-rotation engine.
-2. **Open Design tab in CTRL** — a new 5th sub-tab inside the existing Design module that spawns `pnpm tools-dev` in the sibling `D:\AI Work\open-design\` repo and embeds it via iframe on localhost:3000. Includes new backend service, routes, WebSocket log stream, and frontend panel with 5 visible states.
-3. **ctrlplay-website foundation** — new repo at `D:\AI Work\ctrlplay-website\` with `public/games.json`, landing page, Cloudflare `_headers`, and full deploy README. Ready to push to GitHub + connect to Cloudflare Pages.
-4. **BatonDrop extra_life fix** — user reported the "extra life" baton was appearing far too often despite "extremely rare" copy. Weight 100 → 12, plus skip-spawn-at-full-lives. Committed + pushed to `ctrl-batondrop`.
-5. **Open Design installed** — cloned `nexu-io/open-design`, ran `pnpm install` (12 min), confirmed it loads in CTRL's iframe.
+1. **GameScreen background per world** — `<ScreenWrapper>` already supported
+   a `worldId` prop and rendered the world's background image, but GameScreen
+   wasn't passing it. Now derives `world` from `levelId` (50-slot stride) and
+   threads it through.
 
-Final activity: user invoked `/afk`. No work in flight.
+2. **StackBlock bar shape per world** — block bars were all the same I-beam
+   girder with a per-world recolour. User wanted distinct shapes: "we have
+   girders for construction, we need other themed bars". Refactored into a
+   dispatcher over six per-world body components, each with its own Skia
+   geometry (girder/stone/neon strip/metal panel/crystal/magma-vein basalt).
+
+3. **Release APK v0.13 built** — arm64-v8a + x86_64 (emulator + phone),
+   139 MB, at `D:\AI Work\Mobile-Games\games\stackattack\builds\stackattack-v0.13-world-themed-bars.apk`.
+
+Verified live on the emulator: Level 251 (Chaos world) renders Chaos bg +
+magma-vein basalt bars + "CHAOS" subtitle. Done.
 
 ---
 
 ## CURRENT BUILD STATE
 
 ### Recently completed (this session)
-
-- **Reflex Ring prototype** — `Mobile-Games/games/reflexring/app/` (Vite app), APK at `Mobile-Games/games/reflexring/builds/reflexring-debug-2026-05-19.apk` (~3.9MB). Engine in `src/engine/game.ts` is pure functions (tick / tap / scoring / tier escalation). Ring renders as SVG via `RingCanvas.tsx`. All 11 wireframe screens implemented (Splash, Home, Game with Classic/Sprint/Daily modes, Game-over, Leaderboard, Settings, More Games, Tutorial, Daily Login modal, Achievement toast).
-- **Open Design tab in CTRL** — `src/backend/src/services/open-design.service.ts` (singleton service, mirrors MetroService), `src/backend/src/routes/open-design.routes.ts` (start/stop/status + `OPEN_DESIGN_WS_PATH`), wired into `server.ts`. Frontend at `src/frontend/src/modules/design/components/OpenDesign/` (4 files: panel, service, css, index).
-- **ctrlplay-website bootstrapped** — landing page, games.json with BatonDrop seeded, Cloudflare Pages `_headers` (5min cache on games.json, 30d immutable on icons, CORS open), full README.
-- **BatonDrop extra_life rebalance** — three TS files touched in `Mobile-Games/games/batondrop/app/src/`, auto-committed + pushed.
-- **Open Design installed** at `D:\AI Work\open-design\` and verified running inside CTRL's iframe.
-- **`--no-open` flag** added to OpenDesignService default `startCommand` so the dev server doesn't auto-launch a duplicate browser window.
+- [Stack Attack] GameScreen per-world background + StackBlock world prop wired through
+- [Stack Attack] StackBlock refactored to 6 per-world Skia body components
+- [Stack Attack] Header subtitle now reads from `getWorldTheme(world).worldName` instead of hardcoded `CONSTRUCTION`
+- [Stack Attack] Release APK `stackattack-v0.13-world-themed-bars.apk` built (arm64+x86_64, 139 MB)
+- [Stack Attack] SESSION_STATE.md, LEARNINGS.md, skill-stackattack-screen-polish.md (addendum), and memory project_stackattack.md all updated
 
 ### In progress right now
-- **Nothing functional.** All five workstreams ended cleanly.
+Nothing — all three deliverables shipped and verified.
 
-### Pending / next steps
-
-1. **Install Reflex Ring APK on phone** — built but phone disconnected before adb install. Reconnect, `adb devices`, then `adb install -r "D:\AI Work\Mobile-Games\games\reflexring\builds\reflexring-debug-2026-05-19.apk"`.
-2. **Build + ship BatonDrop v1.9.7** with the extra_life fix. Bump versionCode 20→21, versionName 1.9.6→1.9.7, `cd app/android && ./gradlew bundleRelease`, upload signed AAB to Play Console internal testing → production.
-3. **Push `ctrlplay-website` to GitHub** as `JohnRoberts-prod/ctrlplay-website`, connect to Cloudflare Pages (build cmd empty, output dir `public`).
-4. **(Carried over) Vertex AI vault keys** — add `vertex_project_id=ctrl-493720` and `vertex_region=us-central1` via Settings → Vault. From the earlier session.
-5. **Word Chain prototype** — only remaining casual-game prototype not yet built. Same Vite + React + TS + Capacitor pipeline as the other three. Port 5183.
-6. **Retrofit Colour Flood + Stack Attack `MoreGames.tsx`** to use the shared `crossPromo.service.ts` per CROSS-PROMO-SYSTEM.md — DEFERRED by user: "leave that, apply next time we change those games."
+### Pending / next steps (Stack Attack)
+1. **Generate SA world picker icons** — batch JSON ready at
+   `D:\AI Work\Mobile-Games\skills\batches\stackattack-world-icons.json` (6 prompts
+   for Build/Ruins/Arcade/Space/Multiverse/Chaos). User needs to run through CTRL
+   Design module, then drop PNGs into `app/src/assets/world-icons/`. Then wire into
+   `app/src/components/WorldSelector.tsx` the same way Colour Flood was.
+2. **LevelCard BLUEPRINT image rendering** — on the Chaos LevelSelect screen the
+   level cards show stars + numbers but the BLUEPRINT image asset appears
+   transparent. Numbers + stars are still legible against the world bg so not
+   blocking, but check `app/src/assets/level-select/blueprint.png` path/load.
+3. **W6 selector counter mismatch** — pill shows `150/120` (more stars than max).
+   Same `getWorldStars` vs `visibleCount` mismatch fixed in CF — apply the same
+   `visibleCount` param fix in `app/src/screens/LevelSelectScreen.tsx`.
 
 ---
 
-## ALL MODULES — STATUS
+## ALL MODULES — STATUS (CTRL Control-Centre — NOT touched this session)
 
 | Module | Location | Status | Notes |
 |--------|----------|--------|-------|
-| Home | src/frontend/src/modules/home/ | Working | Widget grid rebuilt earlier session |
-| Claude Tab | src/frontend/src/modules/claude-tab/ | Working | Sidebar panel |
-| Gmail/Google | src/frontend/src/modules/gmail/ | Working | setState bug fixed earlier session |
-| Tasks | src/frontend/src/modules/tasks/ | Working | Rebuilt Monday-style earlier session |
-| Finance | src/frontend/src/modules/finance/ | Working | |
-| Trading | src/frontend/src/modules/trading/ | Working | |
-| GitHub | src/frontend/src/modules/github/ | Working | |
-| Cloudflare | src/frontend/src/modules/cloudflare/ | Working | |
-| Brand Toolkit | src/frontend/src/modules/brand-toolkit/ | Working | Dual-location resolver earlier session |
-| Design | src/frontend/src/modules/design/ | Working | **NEW: 5th sub-tab "Open Design" embeds the sibling repo** |
-| Settings | src/frontend/src/modules/settings/ | Working | Vertex AI status still red pending vault keys |
-| Admin | src/frontend/src/modules/admin/ | Working | ProjectCard rebuild earlier session |
+| Home | src/frontend/src/modules/home/ | unchanged | last known: working |
+| Claude Tab | src/frontend/src/modules/claude-tab/ | unchanged | last known: working |
+| Gmail/Google | src/frontend/src/modules/gmail/ | unchanged | not yet wired to ProjectSelector |
+| Tasks | src/frontend/src/modules/tasks/ | unchanged | retiring to Discord per CLAUDE.md |
+| Projects | src/frontend/src/modules/projects/ | unchanged | ProjectSelector wired (Apr 26) |
+| Finance | src/frontend/src/modules/finance/ | unchanged | ProjectSelector wired (Apr 26) |
+| Trading | src/frontend/src/modules/trading/ | unchanged | last known: working |
+| GitHub | src/frontend/src/modules/github/ | unchanged | ProjectSelector wired (Apr 26) |
+| Cloudflare | src/frontend/src/modules/cloudflare/ | unchanged | not yet wired to ProjectSelector |
+| Brand Toolkit | src/frontend/src/modules/brand-toolkit/ | unchanged | not yet wired to ProjectSelector |
+| Settings | src/frontend/src/modules/settings/ | unchanged | last known: working |
+| Admin | src/frontend/src/modules/admin/ | unchanged | live ProjectsSection (Apr 26) |
+
+Source of truth for CTRL state: `D:\AI Work\Control-Centre\STATUS.md` (26 Apr 2026).
 
 ---
 
 ## FILES CREATED OR MODIFIED THIS SESSION
 
-### CTRL repo (`D:\AI Work\Control-Centre\`)
 ```
-src/backend/src/services/open-design.service.ts        — NEW
-src/backend/src/routes/open-design.routes.ts           — NEW
-src/backend/src/server.ts                              — added Open Design import, route mount, WS server
-src/frontend/src/modules/design/components/OpenDesign/OpenDesignPanel.tsx  — NEW
-src/frontend/src/modules/design/components/OpenDesign/openDesign.service.ts — NEW
-src/frontend/src/modules/design/components/OpenDesign/open-design.css     — NEW
-src/frontend/src/modules/design/components/OpenDesign/index.ts            — NEW
-src/frontend/src/modules/design/Design.tsx             — 5th tab + Palette import + saved-tab parser update
-SESSION_STATE.md                                       — fully rewritten
-LEARNINGS.md                                           — 4 new entries
-```
+D:/AI Work/Mobile-Games/games/stackattack/app/src/screens/GameScreen.tsx
+  - Imported getWorldTheme + WorldId from useWorldTheme
+  - Derived `world` from `levelId` and `worldName` from `getWorldTheme(world)`
+  - Wrapped with `<ScreenWrapper worldId={world}>`
+  - Passed `world={world}` to slider and tower StackBlock usages
+  - TowerBlockView signature gained `world: WorldId` prop
+  - Header subtitle changed from `CONSTRUCTION` to `{worldName.toUpperCase()}`
 
-### ctrlplay-website (`D:\AI Work\ctrlplay-website\`)
-```
-README.md                — NEW (Cloudflare Pages setup + game-launch procedure)
-.gitignore               — NEW
-public/index.html        — NEW (landing page)
-public/games.json        — NEW (BatonDrop seeded as the only live entry)
-public/_headers          — NEW (Cloudflare cache rules + CORS)
-public/icons/README.md   — NEW (icon spec + per-game checklist)
-```
+D:/AI Work/Mobile-Games/games/stackattack/app/src/components/StackBlock.tsx
+  - Full rewrite: dispatcher of 6 per-world body components
+  - <ConstructionBody>, <RuinsBody>, <ArcadeBody>, <SpaceBody>,
+    <MultiverseBody>, <ChaosBody>
+  - WorldScheme `stripe` field renamed `accent` for neutrality
+  - Bonus blocks hardcoded to W1 girder regardless of world
 
-### BatonDrop (`D:\AI Work\Mobile-Games\games\batondrop\`)
-```
-app/src/constants/game.ts        — extra_life weight 100 → 12 with lock comment
-app/src/engine/BatonSpawner.ts   — pickSpecial(level, livesAtCap), buildBaton + spawnBaton signature update
-app/src/engine/GameEngine.ts     — loadLane() passes lives >= LIVES_PER_RUN to spawnBaton
-SESSION_STATE.md                 — fully rewritten
-```
+D:/AI Work/Mobile-Games/games/stackattack/builds/stackattack-v0.13-world-themed-bars.apk
+  - NEW release build, 139 MB, arm64-v8a + x86_64
 
-### Reflex Ring (`D:\AI Work\Mobile-Games\games\reflexring\`)
-```
-design/wireframes/             — NEW (Claude Design bundle + SOURCE.md)
-app/ (entire app)              — NEW (Vite + React + TS + Capacitor)
-builds/reflexring-debug-2026-05-19.apk  — NEW (~3.9MB)
-builds/README.md               — NEW (sideload instructions)
-SESSION_STATE.md               — fully rewritten
-```
+D:/AI Work/Mobile-Games/games/stackattack/SESSION_STATE.md
+  - Overwritten with current state
 
-### Sibling repo (cloned this session)
-```
-D:/AI Work/open-design/        — git clone https://github.com/nexu-io/open-design (4442 files)
-                                  pnpm install completed (12 min)
+D:/AI Work/Mobile-Games/games/stackattack/LEARNINGS.md
+  - 6 new entries (GameScreen world derivation, StackBlock dispatcher pattern,
+    bonus blocks stay W1, adb uiautomator flakiness, screenshot coord scanning,
+    Metro --reset-cache cold time)
+
+D:/AI Work/Mobile-Games/games/stackattack/skill-stackattack-screen-polish.md
+  - New addendum: "Per-world bar geometry (2026-05-24)" — pattern, WorldScheme
+    shape, how to add a new world, wiring from GameScreen
+
+C:/Users/admin/.claude/projects/d--AI-Work/memory/project_stackattack.md
+  - Updated description + body to reflect 2026-05-24 work
 ```
 
 ---
 
 ## RECENT GIT COMMITS
 
-BatonDrop (the one repo that pushed this session — others use folder-only layout):
-```
-09a91b5  Auto-backup: 2026-05-19         <- extra_life fix
-b704d89  Bump to v2.0.0 (versionCode 21)
-cc316f3  How to Play: guard catch impact against multi-fire
-865def9  How to Play: animated Basics demo using real game assets
-6154366  Loading screen: replace spinner with pulsing logo + amber halo
-```
+CTRL Control-Centre is **not a git repository** (no `.git` directory). No commits
+to report from CTRL itself. Stack Attack also not in the project_repos table —
+it's archived via direct file copy to `builds/` per-version, not via git.
+
+batondrop was the only linked repo with new changes — auto-pushed during Step 0.5
+of this /afk run.
 
 ---
 
 ## OPEN ISSUES / KNOWN BUGS
 
-- **Reflex Ring APK not installed on phone yet** — phone disconnected during build. Reconnect + adb install when ready.
-- **BatonDrop fix not yet shipped** — three TS files committed but no new AAB built. Player-facing fix needs Play Store push.
-- **Vertex AI vault keys still missing** — from earlier session. Two vault entries pending, then Vertex pathway goes live for the £225 GCP credit.
-- **Pre-existing TS errors in `GoogleSignInService.ts`** in BatonDrop — unrelated to this session's work, surfaced during tsc check.
-- **Cross-promo retrofit deferred** for Colour Flood + Stack Attack `MoreGames.tsx`. Both currently use hardcoded game lists; the shared `crossPromo.service.ts` pattern from `CROSS-PROMO-SYSTEM.md` should replace them at next per-game touch.
+### Stack Attack
+- LevelCard BLUEPRINT image appears transparent on Chaos LevelSelect screen
+- W6 world-selector pill shows `150/120` (count > max) — `getWorldStars` uses
+  full 50-level engine range while max uses visible `levelCount` (40 for W6)
+- 8 pre-existing TS errors (not from this session, not blocking Metro/runtime):
+  - `ScreenWrapper.absoluteFillObject` (should be `absoluteFill`)
+  - `tokens.quart` (no such Easing property)
+  - `RouteProp` imported from `@react-navigation/native-stack` (lives in `/native`)
+  - `DEFAULT_CONFIG` not exported from engine/game
+  - 2x `tabBarStyle` on stack screens (only valid on tab screens)
+- `adb shell uiautomator dump` returns "failed to stat" on this emulator —
+  workaround used: `adb exec-out screencap -p` then sharp pixel scan for orange
+  button centres
+
+### Environment
+- Background `uiautomator` FATAL exceptions on emulator (rapid-fire, ephemeral
+  PIDs) — unrelated to SA, some other tool is spamming `uiautomator dump`
 
 ---
 
 ## KEY DECISIONS MADE THIS SESSION
 
-- **Bold Arcade is the locked CTRL Play house style** — three independent Claude Design sessions (Colour Flood -> Stack Attack -> Reflex Ring) all recommended Variation B. Pattern is provable.
-- **Open Design integrates as a sub-tab** of the existing Design module, not a separate top-level page. Keeps "Design" as one mental concept.
-- **`--no-open` in Open Design startCommand** — added after the dev server kept auto-launching a duplicate browser window alongside the CTRL iframe.
-- **extra_life weight = 12** (user chose from a 3-option menu). Targets ~1% of all batons at L20+ to match "extremely rare" copy.
-- **extra_life smart spawn** — skip the RARE pool entirely when `lives === LIVES_PER_RUN`. When it appears, it always means something.
-- **Cross-promo retrofit DEFERRED** to next per-game touch (user call).
-- **CTRL DB already has WAL + synchronous=NORMAL + 32MB cache** — no perf tuning needed.
-- **Casual prototype pattern is reproducible** — Vite + React + TS + Capacitor + same folder shape works for any of the four casual games. Ports 5180/5181/5182 used, 5183 reserved for Word Chain.
+- **Per-world bar SHAPES, not just recolours** — each world body gets its own
+  Skia geometry. Adding a new world = add one `<XxxBody>` component + one
+  dispatcher line. No changes to GameScreen needed.
+- **Bonus block stays as the W1 gold girder** across all worlds so it reads
+  as "golden version of the familiar shape" rather than mutating per world.
+- **Release APK includes arm64-v8a + x86_64** — emulator-first testing rule
+  (locked 2026-05-23) requires x86_64; arm64 stays for phone testing.
+- **WorldScheme.stripe renamed to WorldScheme.accent** — neutral name since
+  each world uses it differently (hazard stripes / mortar / neon / LED / spine / magma).
 
 ---
 
 ## BACKEND API ENDPOINTS ADDED THIS SESSION
 
-```
-GET  /api/open-design/status   -> installed + running + responding + port + path + pid + startedAt
-POST /api/open-design/start    -> spawn pnpm tools-dev --no-open in D:/AI Work/open-design
-POST /api/open-design/stop     -> taskkill /T /F the process tree
-WS   /api/open-design/logs     -> rolling 200-line log buffer streamed via WebSocket
-```
-
-All routes gated by `requireVaultUnlocked`. Service follows the exact shape of `MetroService` (singleton, taskkill /T /F on Windows, HTTP probe for "responding" status).
+None — no CTRL backend work this session.
 
 ---
 
 ## DATABASE CHANGES THIS SESSION
 
-None. No new migrations, no schema changes, no new tables. SQLite already had WAL on and 93 indexes covering the hot query paths.
+None — no CTRL DB work this session.
 
 ---
 
 ## IMPORTANT CONTEXT FOR NEXT SESSION
 
-1. **Open Design starts via the new tab**, not from a terminal. If it won't start, the first place to look is the WebSocket log stream (visible in the "starting" view) — likely either pnpm not on PATH or port 3000 in use. Service falls back to safe defaults if `.ctrl-config.json` has no `openDesign` key.
-2. **Open Design iframe loads localhost:3000.** If the iframe is blank but the "open in browser" button works, it's an X-Frame-Options header on Open Design's dev server. Fix lives in `D:\AI Work\open-design\` (NOT in CTRL), per the spec.
-3. **BatonDrop is LIVE on Play Store** (approved 2026-05-19 earlier). The extra_life fix is committed but not shipped — needs versionCode bump + signed AAB build + Play Console upload before users see it. 3-layer keystore backup pattern documented in `project_keystore_backups.md` memory.
-4. **ctrlplay-website is a fresh repo** at `D:\AI Work\ctrlplay-website\` — has `.gitignore` but no `.git` yet. Init + push when ready.
-5. **Reflex Ring engine** is fully spec-locked: ±2° forgiveness, 12° zone minimum, 0.45s speed floor, `onPointerDown` for tap. Don't change those without re-reading the GDD.
-6. **Pre-existing BatonDrop TS errors** in `GoogleSignInService.ts` are not from this session. They've been there for weeks. Don't waste time on them unless asked.
-7. **The `nexu-io/open-design` repo is real** — 4442 files, pnpm 10.33.2. pnpm install reports two harmless warnings (missing `.EXE` for `od` CLI bin, ignored build scripts for core-js/sharp/etc.) — those are fine.
-8. **WSL Bash on Windows can mangle backslashes in `node -e "..."`** — when scripting Windows path operations, write to a temp `.cjs` file via the Write tool, then `node /path/to/file.cjs`. The afk-push-repos.cjs script in `/tmp` uses this pattern.
+- **Stack Attack is the active project.** If you walk in to "continue from
+  last session" without context, default to opening
+  `D:\AI Work\Mobile-Games\games\stackattack\SESSION_STATE.md` first.
+- **Test loop is emulator-first** (rule locked 2026-05-23). Release APK
+  includes x86_64 for that reason — don't strip it for size.
+- **Metro is on port 8081** for Stack Attack (CF uses 8081 too — they conflict
+  if both run at once). When switching games, kill Metro first.
+- **Coord-finding via screenshot + sharp** works reliably when `uiautomator
+  dump` is broken. Pattern: `adb exec-out screencap -p > tmp.png`, then
+  `node -e "sharp(...).raw().toBuffer..."` with RGB threshold for the button
+  colour. Confirmed working this session.
+- **adb tap coords are NATIVE pixels (1080x2400)** — chat screenshot display
+  size is misleading. Always use sharp to find the button centre before
+  tapping.
+- **Don't trust the chat's "displayed at 900x2000 multiply by 1.20" hint**
+  blindly — multiple wrong-Y taps this session before pivoting to sharp.
+- **batondrop was auto-pushed to GitHub** during this /afk. Other "linked"
+  projects in the DB aren't git repos so were silently skipped — that's
+  expected behaviour.
 
 ---
 
-## HOW TO START THE SYSTEM
+## HOW TO START THE SYSTEM (CTRL)
 
 ```
 D:\AI Work\START-ALL.bat
@@ -207,25 +228,31 @@ Or manually:
 - Frontend: `cd D:\AI Work\Control-Centre && npm run dev:frontend`
 - Terminal server: `cd D:\AI Work\Control-Centre\src\terminal-server && npm run dev`
 
-To run Reflex Ring locally instead of via APK:
-```
-cd D:\AI Work\Mobile-Games\games\reflexring\app && npm run dev
-```
-Same for Colour Flood (5180) and Stack Attack (5181).
+## HOW TO RESUME STACK ATTACK WORK
 
-To start Open Design separately (it is just a sibling repo):
 ```
-cd D:\AI Work\open-design && pnpm tools-dev --no-open
+# 1. Install latest APK on emulator (or phone)
+adb install -r "D:/AI Work/Mobile-Games/games/stackattack/builds/stackattack-v0.13-world-themed-bars.apk"
+
+# 2. Or run from source with Metro hot reload
+cd "D:/AI Work/Mobile-Games/games/stackattack/app"
+npx react-native start --reset-cache    # Metro on 8081
+# in another shell:
+adb shell am force-stop com.stackattack
+adb shell monkey -p com.stackattack -c android.intent.category.LAUNCHER 1
 ```
 
 ---
 
 ## PROJECTS OUTSIDE CTRL (for full context)
 
-- **BatonDrop** — LIVE on Google Play (com.batondrop, approved 2026-05-19). extra_life fix committed locally, needs versionCode bump + signed AAB before next ship.
-- **Reflex Ring / Stack Attack / Colour Flood** — Vite browser prototypes + sideloadable debug APKs. Ports 5180-5182. Not yet ported to RN 0.85 (the production target).
-- **Word Chain** — folder scaffold only. Pattern proven by the other three casuals; ~half-day to clone the pipeline.
-- **BedBouncer** — ESP32 smart alarm, brand portal complete, website live at bedbouncer.co.uk. Quiet this session.
-- **CtrlPro / Homeland / Personal** — paused per user instruction earlier. No work this session.
-- **ctrlplay-website** — NEW this session. Public-facing landing page + cross-promo registry. Ready to push to GitHub + connect to Cloudflare Pages.
-- **open-design** — sibling tool repo (nexu-io/open-design). Cloned + installed this session. CTRL embeds it via iframe but never owns its code.
+- **CTRLPro** — hospitality SaaS dashboard, planning phase, first client conversation pending
+- **BedBouncer** — ESP32 smart alarm, website live at bedbouncer.co.uk, Kickstarter prep
+- **Mobile Games** — multiple titles in flight:
+  - **BatonDrop** — v2.0.0 in Google Play production review
+  - **WordDrop** — GDD + brand done, build pending
+  - **Cavernborn** — dark fantasy idle RPG, RN app not yet initialised
+  - **Stack Attack** — RN 0.85 app, v0.13 built today (this session)
+  - **Colour Flood** — RN 0.85.2 app, v0.17 last build
+  - **Reflex Ring** — scaffolded 2026-05-18, no build yet
+  - **Word Chain** — RN 0.85 shell scaffolded, gameplay not wired
