@@ -1,132 +1,131 @@
 # CTRL Project Handover
-*Last updated: 2026-05-30 UTC*
-*Session ended: Stack Attack polish + AdMob done, moving to Colour Flood*
+*Last updated: 2026-05-31 UTC*
+*Session ended: CTRL trading self-learning — NEW_STRATEGY command parser added*
 
 ---
 
 ## HOW TO USE THIS DOCUMENT
 
-You are Claude picking up a mobile games session for John Roberts.
-Read this entire document before responding.
-
-Active project this session: **Stack Attack** (React Native 0.85 bare)
-Location: `D:AI WorkMobile-Gamesgamesstackattackapp`
-Package: `com.stackattack`
-
-John's next focus: **Colour Flood**
-Location: `D:AI WorkMobile-Gamesgamescolourflood`
+You are Claude picking up a multi-project development session for John Roberts.
+Today covered: Stack Attack (Play Store submission), Colour Flood (full feature build + Play Store), CTRL trading (self-learning strategy discovery).
 
 ---
 
-## WHAT WE WERE BUILDING THIS SESSION
+## WHAT WE WERE BUILDING WHEN /AFK WAS CALLED
 
-Stack Attack UI polish and AdMob integration. Fixed GameOver always showing wrong world
-background, removed a dead lives system, enlarged the level header text, removed a fake
-Remove Ads button and replaced a non-functional daily challenge with a Coming Soon badge,
-and fully wired AdMob with real production IDs. Session ended with a built APK that has
-not yet been installed because the phone was not connected.
+CTRL trading module — self-learning strategy discovery. The trading bot runs 5 routines daily (Pre-Market, Market Decision, Midday Review, Political Watch, EOD) and was placing real trades but had no mechanism to register new strategies it discovered. Built:
+1. POST /api/trading/strategies endpoint
+2. NEW_STRATEGY command parser in trading-scheduler.service.ts (same pattern as TRADE_ORDER)
+3. Context update so the bot can emit NEW_STRATEGY: {"name":"...","description":"...","risk_level":"...","works_best":"..."}
 
 ---
 
-## CURRENT BUILD STATE
+## STACK ATTACK STATUS
 
-### Completed this session
+- AAB versionCode 2, package com.stackattacker, release-signed
+- Uploaded to Play Console internal testing
+- Phone uninstalled (waiting for Play Store)
+- Needs: 12 testers + 14 days before production
+- Needs: feature graphic via /process-batch stackattack-feature-graphic
+- Keystore: android/app/stackattack-release.keystore + D:/AI Work/.keystores/
+- Keystore pass: 27449bfb1f04ff1c356aac2b411d320b
+- AdMob real IDs already set (App ~9636978172, Unit /3071569826)
 
-- **GameOver world background** — `app/src/screens/GameOverScreen.tsx`
-  Always showed Construction theme. Fixed: worldForLevel(levelId).world passed to ScreenWrapper.
+---
 
-- **Remove Ads button removed** — `app/src/screens/SettingsScreen.tsx`
-  Entire Site Supplies section deleted. Was an Alert stub, never real IAP.
+## COLOUR FLOOD STATUS
 
-- **Daily Challenge → Coming Soon** — `app/src/screens/HomeScreen.tsx`
-  Removed lock/unlock mechanic. Static COMING SOON badge now shown.
+- AAB versionCode 1, package com.colourflood, release-signed
+- Uploaded to Play Console internal testing
+- Phone uninstalled (waiting for Play Store)
+- AdMob real IDs: App ca-app-pub-4375702454097791~5689004621, Unit /6696788368
+- Leaderboard Worker live: https://colourflood-leaderboard.johnbenjaminroberts.workers.dev
+- D1 DB: 90d1c7db-5550-461f-915f-b38ac9ee51c8
+- Needs: feature graphic via /process-batch colourflood-feature-graphic
+- Keystore: android/app/colourflood-release.keystore + D:/AI Work/.keystores/
+- Keystore pass: 8bb1d2f0c6de8577df85412d2b56904f
 
-- **AdMob integrated** — full production
-  Package: react-native-google-mobile-ads@^16.3.3
-  App ID: ca-app-pub-4375702454097791~9636978172
-  Interstitial unit: ca-app-pub-4375702454097791/3071569826
-  AdService.ts fires interstitial every 5 levels (win or lose)
-  AdActivity theme override for Android 15 edge-to-edge fix
-  SDK initialised in App.tsx; showInterstitialIfDue() in GameOverScreen useEffect
+---
 
-- **Lives system removed** — `app/src/screens/GameScreen.tsx`
-  LivesDisplay, lives store sub, spendLife(), life-lost toast — all deleted.
-  Mechanic: miss the bar = instant game over. Right-side slot = width-48 spacer.
+## CTRL TRADING STATUS
 
-- **Level text enlarged** — `app/src/screens/GameScreen.tsx`
-  Was TYPE.label. Now FONTS.numberBold 28px #f5c520 gold.
-
-### In progress right now
-
-Built APK at: `app/android/app/build/outputs/apk/release/app-release.apk`
-NOT YET INSTALLED. Phone (38011FDJG00520) not connected at session end.
-FIRST THING next Stack Attack session: plug phone in and install.
+- Backend was down earlier, restarted, vault needs unlocking after restart
+- NEW_STRATEGY parser added to trading-scheduler.service.ts
+- POST /api/trading/strategies route added
+- trading-context.service.ts updated with NEW_STRATEGY format instructions
+- 5 routines ran 25-29 times each, last run 2026-05-26 — resume 2026-06-02
+- 3 strategies currently in DB; bot will add more on next routine runs
+- 10 filled orders in DB (AMD, LMT, NVDA, XOM, SMCI, ARM, INTC)
 
 ---
 
 ## FILES MODIFIED THIS SESSION
 
 ```
-app/src/screens/GameOverScreen.tsx  — worldId prop added to ScreenWrapper
-app/src/screens/SettingsScreen.tsx  — Site Supplies section removed
-app/src/screens/HomeScreen.tsx      — Daily Challenge replaced with Coming Soon badge
-app/src/screens/GameScreen.tsx      — Lives removed; level text enlarged to 28px gold bold
-app/src/services/AdService.ts       — NEW: interstitial every 5 levels
-app/App.tsx                         — mobileAds().initialize() + preloadAds()
-app/app.json                        — AdMob android_app_id added
-app/android/.../AndroidManifest.xml — AdMob App ID meta-data + AdActivity theme
-app/android/.../values/styles.xml   — AdActivityTheme fallback
-app/android/.../values-v35/styles.xml — AdActivityTheme edge-to-edge opt-out
-app/package.json                    — react-native-google-mobile-ads added
+SA: android/app/build.gradle — com.stackattacker, release signing, versionCode 2
+SA: android/keystore.properties — NEW
+SA: mipmap-anydpi-v26/ic_launcher.xml — NEW adaptive icon XML
+SA: mipmap-*/ic_launcher*.png — Icon Kitchen icons
+
+CF: PlayScreen.tsx — DELETED
+CF: PlayStack.tsx, types.ts — Play removed from stack
+CF: GameScreen.tsx — lives removed, level text enlarged
+CF: GameOverScreen.tsx — worldId fix, daily screen, score submit
+CF: HomeScreen.tsx — coins/streak removed, daily moved up, modals wired
+CF: SettingsScreen.tsx — Remove Ads deleted
+CF: LevelSelectScreen.tsx — GestureDetector swipe, compact layout
+CF: LeaderboardScreen.tsx — real API, 4 tabs (Stars/Efficiency/Level/Daily)
+CF: NameEntryScreen.tsx — NEW
+CF: HowToPlayScreen.tsx — NEW
+CF: AdService.ts — NEW AdMob interstitial
+CF: LeaderboardService.ts — NEW full leaderboard + daily API
+CF: gameStore.ts — playerName, hasSetName, hasSeenHowToPlay added
+CF: useWorldTheme.ts — worldId param
+CF: ScreenWrapper.tsx — worldId prop
+CF: WorldSelector.tsx — height 64px fixed
+CF: App.tsx — mobileAds init
+CF: app.json, AndroidManifest.xml — AdMob IDs
+CF: android/app/build.gradle — release signing
+CF: backend/ — NEW Cloudflare Worker + D1
+
+CTRL: trading.routes.ts — POST /api/trading/strategies
+CTRL: trading-scheduler.service.ts — NEW_STRATEGY parser
+CTRL: trading-context.service.ts — NEW_STRATEGY instructions
+CTRL: trading.service.ts (frontend) — createStrategy() method
+ctrlplay-website: privacy.html — effective date 2026-05-31
 ```
 
 ---
 
 ## OPEN ISSUES
 
-- App icon: user suspects upside down. Claude viewed all mipmap PNGs — looks correct
-  (tower up, figure at bottom). Needs fresh physical device check after install.
-- 9 pre-existing TS errors in GameScreen.tsx — not blocking, from previous session.
+- CTRL vault locked after backend restart — unlock before using trading/vault features
+- SA + CF need 12 testers + 14 days for Play Store production
+- Feature graphics not generated for either game (batches exist in skills/batches/)
+- Add keystore passwords to CTRL vault
 
 ---
 
 ## KEY DECISIONS
 
-- No lives — miss = instant game over. Lives were dead design debt.
-- AdMob every 5 levels — matches BatonDrop pattern, fire-and-forget.
-- Daily Challenge Coming Soon — real implementation needs backend. Not worth faking.
+- SA: applicationId=com.stackattacker (Play Store), namespace=com.stackattack (Java) — independent
+- Keystores in android/app/ not android/ — file() resolves to app module dir
+- CF daily: levelId=0 sentinel, /daily/submit endpoint, not /submit
+- Trading: bot emits NEW_STRATEGY like TRADE_ORDER, scheduler auto-registers
+- Profanity: bad names become Anonymous on score submit, 400 on /player/name
 
 ---
 
-## STACK ATTACK CONTEXT
+## HOW TO START CTRL
 
-60 levels across 6 worlds (10 per world). World 1 = Construction.
-Gameplay: slider bounces L/R, tap to drop. Miss entirely = game over.
-Special Bars system Phase 1-3 done: Ghost Line / Stone Lock / Repair Kit / Mirror / Steel Beam / Wildcard.
-Leaderboard: Cloudflare Worker + D1 at stackattack-leaderboard.johnbenjaminroberts.workers.dev
-Navigation: bottom tabs (Site/Build/Records/Blueprint) + BuildStack (LevelSelect→Game→GameOver)
+pm2 restart ctrl-backend (then unlock vault in CTRL UI)
 
----
-
-## COLOUR FLOOD — NEXT PROJECT
-
-Location: `D:AI WorkMobile-Gamesgamescolourflood`
-RN 0.85.2 production app. "Colour" spelling locked (British English). v0.6, arm64-only.
-READ SESSION_STATE.md in that folder before touching anything.
-
----
-
-## IMPORTANT CONTEXT
-
-- AdMob first build is slow (~17 min / 836 tasks). APK already built — do not rebuild unless changed.
-- Phone serial: 38011FDJG00520. Always: adb -s 38011FDJG00520 install -r <apk>
-- BatonDrop is the reference for all patterns. Publisher: ca-app-pub-4375702454097791
+Or: cd D:\AI Work\Control-Centre && npm run dev (runs all three services)
 
 ---
 
 ## OTHER PROJECTS
 
-- BatonDrop: v2.0.0 submitted to Google Play 2026-05-17, awaiting review.
-- CTRL Control Centre: local web app, D:AI WorkControl-Centre
-- BedBouncer: bedbouncer.co.uk live, pre-Kickstarter.
-- CTRLPro: planning phase, first client conversation pending.
+- BatonDrop: v2.0.0 in Play Store production review since 2026-05-17
+- WordDrop: paused
+- ctrlplay.games/privacy: effective date 2026-05-31 pushed live
