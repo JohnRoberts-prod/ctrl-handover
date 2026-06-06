@@ -1,131 +1,136 @@
-# CTRL Project Handover
-*Last updated: 2026-05-31 UTC*
-*Session ended: CTRL trading self-learning — NEW_STRATEGY command parser added*
+﻿# CTRL Project Handover
+*Last updated: 2026-06-06 UTC*
+*Session ended: Fixed audio sync issue on Reframe AI Video 1 — v7c.mp4 is the clean final build, on Google Drive, ready to upload to YouTube.*
 
 ---
 
 ## HOW TO USE THIS DOCUMENT
 
-You are Claude picking up a multi-project development session for John Roberts.
-Today covered: Stack Attack (Play Store submission), Colour Flood (full feature build + Play Store), CTRL trading (self-learning strategy discovery).
+You are Claude web browser picking up a CTRL development session.
+John Roberts is the developer. Read this entire document before responding.
+
+The CTRL codebase is at: `D:\AI Work\Control-Centre\`
+Backend: Node.js + Express + TypeScript on port 3001
+Frontend: React 18 + Vite + TypeScript on port 5173
+Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db`
 
 ---
 
-## WHAT WE WERE BUILDING WHEN /AFK WAS CALLED
+## WHAT WE WERE BUILDING THIS SESSION
 
-CTRL trading module — self-learning strategy discovery. The trading bot runs 5 routines daily (Pre-Market, Market Decision, Midday Review, Political Watch, EOD) and was placing real trades but had no mechanism to register new strategies it discovered. Built:
-1. POST /api/trading/strategies endpoint
-2. NEW_STRATEGY command parser in trading-scheduler.service.ts (same pattern as TRADE_ORDER)
-3. Context update so the bot can emit NEW_STRATEGY: {"name":"...","description":"...","risk_level":"...","works_best":"..."}
+This session was entirely focused on the **Reframe AI YouTube channel** (Video 1 — Pulp Fiction diner scene remade as Studio Ghibli animation). The session recovered from a previous 1M context API error (the 'bunny ears session') and continued where it left off. We added a proper story ending to the video, fixed two separate audio bugs that caused the music to cut out on YouTube, and produced a clean final build: `reframe-ai-video-1-v7c.mp4`.
 
 ---
 
-## STACK ATTACK STATUS
+## CURRENT BUILD STATE
 
-- AAB versionCode 2, package com.stackattacker, release-signed
-- Uploaded to Play Console internal testing
-- Phone uninstalled (waiting for Play Store)
-- Needs: 12 testers + 14 days before production
-- Needs: feature graphic via /process-batch stackattack-feature-graphic
-- Keystore: android/app/stackattack-release.keystore + D:/AI Work/.keystores/
-- Keystore pass: 27449bfb1f04ff1c356aac2b411d320b
-- AdMob real IDs already set (App ~9636978172, Unit /3071569826)
+### Completed this session
 
----
+- **Recovered bunny ears session** — extracted prior context from JSONL transcript. Two outstanding tasks: title fix + missing ending.
+- **create-reframe-v1-v5.cjs** — 10-scene script (7 original + 3 ending scenes). Script ID: `rf_mq1hvexk_420d2`
+- **Ending scenes added (scenes 8-10):**
+  - Scene 8 (Pumpkin/Roger): walks the diner with a big black bin bag, patrons drop valuables in — *"Wallets, watches — in the bag. Don't be shy."*
+  - Scene 9 (Honey Bunny/Laura): spots police lights through the window — *"Cops! Go go go!"*
+  - Scene 10 (Pumpkin/Roger): both burst out the diner door laughing, bin bag swinging — *"Ha!"*
+- **Title card fixed**: "What if Pulp Fiction was animated?" — Playfair Display bold, no emoji
+- **make-reframe-v1-v5c.cjs** — FINAL assembler with two critical audio fixes
+- **reframe-ai-video-1-v7c.mp4** — 51s, 30MB. On Drive: G:\My Drive\reframe-ai-video-1-v7c.mp4
 
-## COLOUR FLOOD STATUS
+### Two audio bugs diagnosed and fixed
 
-- AAB versionCode 1, package com.colourflood, release-signed
-- Uploaded to Play Console internal testing
-- Phone uninstalled (waiting for Play Store)
-- AdMob real IDs: App ca-app-pub-4375702454097791~5689004621, Unit /6696788368
-- Leaderboard Worker live: https://colourflood-leaderboard.johnbenjaminroberts.workers.dev
-- D1 DB: 90d1c7db-5550-461f-915f-b38ac9ee51c8
-- Needs: feature graphic via /process-batch colourflood-feature-graphic
-- Keystore: android/app/colourflood-release.keystore + D:/AI Work/.keystores/
-- Keystore pass: 8bb1d2f0c6de8577df85412d2b56904f
+**Bug 1 — Music cuts out between dialogue on YouTube:**
+Each rendered clip's audio was 2s shorter than the clip video (clipDur = audioDur + TAIL_SECS, audio file only covers audioDur). After concatenating 10 clips, the audio stream had 2s holes at every clip boundary. The amerge mixing filter stops producing output when any input has no data — music cut at every gap.
+Fix: Added `[1:a]apad[aout]` to both branches of renderMuxedClip so audio fills the full clip duration before concat.
 
----
+**Bug 2 — Audio/video sync drift (introduced by post-fix attempt):**
+Trying to repair audio via multiple ffmpeg remix steps shifted audio timestamps.
+Fix: Fix the source (apad at render time), not the output.
 
-## CTRL TRADING STATUS
+**Music mix rule:**
+Never use amix — normalises by dividing by n_inputs, music drops to -21dBFS during silence, wiped by YouTube loudness processing.
+Always use amerge+pan: `[voice][music]amerge=inputs=2[merged]` + `[merged]pan=stereo|c0=c0+c2|c1=c1+c3[aout]`
 
-- Backend was down earlier, restarted, vault needs unlocking after restart
-- NEW_STRATEGY parser added to trading-scheduler.service.ts
-- POST /api/trading/strategies route added
-- trading-context.service.ts updated with NEW_STRATEGY format instructions
-- 5 routines ran 25-29 times each, last run 2026-05-26 — resume 2026-06-02
-- 3 strategies currently in DB; bot will add more on next routine runs
-- 10 filled orders in DB (AMD, LMT, NVDA, XOM, SMCI, ARM, INTC)
+### In progress / next steps
+
+1. Upload reframe-ai-video-1-v7c.mp4 to YouTube (@ReframeAI) and confirm music is continuous
+2. Write YouTube title, description, hashtags for Video 1
+3. Begin Video 2 from the 20 ideas in design/reframe-ai-channel.md
+4. Apply the apad fix to all future make scripts as the new standard
 
 ---
 
-## FILES MODIFIED THIS SESSION
+## FILES CREATED OR MODIFIED THIS SESSION
 
 ```
-SA: android/app/build.gradle — com.stackattacker, release signing, versionCode 2
-SA: android/keystore.properties — NEW
-SA: mipmap-anydpi-v26/ic_launcher.xml — NEW adaptive icon XML
-SA: mipmap-*/ic_launcher*.png — Icon Kitchen icons
-
-CF: PlayScreen.tsx — DELETED
-CF: PlayStack.tsx, types.ts — Play removed from stack
-CF: GameScreen.tsx — lives removed, level text enlarged
-CF: GameOverScreen.tsx — worldId fix, daily screen, score submit
-CF: HomeScreen.tsx — coins/streak removed, daily moved up, modals wired
-CF: SettingsScreen.tsx — Remove Ads deleted
-CF: LevelSelectScreen.tsx — GestureDetector swipe, compact layout
-CF: LeaderboardScreen.tsx — real API, 4 tabs (Stars/Efficiency/Level/Daily)
-CF: NameEntryScreen.tsx — NEW
-CF: HowToPlayScreen.tsx — NEW
-CF: AdService.ts — NEW AdMob interstitial
-CF: LeaderboardService.ts — NEW full leaderboard + daily API
-CF: gameStore.ts — playerName, hasSetName, hasSeenHowToPlay added
-CF: useWorldTheme.ts — worldId param
-CF: ScreenWrapper.tsx — worldId prop
-CF: WorldSelector.tsx — height 64px fixed
-CF: App.tsx — mobileAds init
-CF: app.json, AndroidManifest.xml — AdMob IDs
-CF: android/app/build.gradle — release signing
-CF: backend/ — NEW Cloudflare Worker + D1
-
-CTRL: trading.routes.ts — POST /api/trading/strategies
-CTRL: trading-scheduler.service.ts — NEW_STRATEGY parser
-CTRL: trading-context.service.ts — NEW_STRATEGY instructions
-CTRL: trading.service.ts (frontend) — createStrategy() method
-ctrlplay-website: privacy.html — effective date 2026-05-31
+D:\AI Work\Control-Centre\create-reframe-v1-v5.cjs       — 10-scene DB script (the good one)
+D:\AI Work\Control-Centre\make-reframe-v1-v5c.cjs         — FINAL make script: apad fix + amerge+pan
+D:\AI Work\Control-Centre\v1-v5-voices.json               — voice mapping (scriptId: rf_mq1hvexk_420d2)
+D:\AI Work\Control-Centre\create-reframe-v1-v4.cjs        — superseded (bad ending)
+D:\AI Work\Control-Centre\make-reframe-v1-v4.cjs          — superseded
+D:\AI Work\Control-Centre\make-reframe-v1-v5.cjs          — superseded (had audio bugs)
+D:\AI Work\Control-Centre\remix-music-v5.cjs              — dead end, do not use
+D:\AI Work\Control-Centre\remix-music-v5b.cjs             — dead end, do not use
+D:\AI Work\YouTube\reframe-ai\skills\skill-reframe-ai-workflow.md — major update: full audio bug docs
+D:\AI Work\YouTube\reframe-ai\SESSION_STATE.md            — updated
+D:\AI Work\YouTube\reframe-ai\LEARNINGS.md               — 7 new entries
+G:\My Drive\reframe-ai-video-1-v7c.mp4                   — FINAL VIDEO (30MB, 51s)
 ```
+
+---
+
+## REFRAME AI VIDEO 1 — TECHNICAL DETAILS
+
+**Script ID:** `rf_mq1hvexk_420d2`  
+**Make script:** `make-reframe-v1-v5c.cjs`  
+**Voices:**
+- George `JBFqnCBsd6RMkjVDRZzb` — narrator
+- Roger `CwhRBWXzGAHq8TQ4Fs17` — Pumpkin
+- Laura `FGY2WhTYpPnrIDTdsKH5` — Honey Bunny
+
+**TTS endpoint:** `POST /api/video-pipeline/tts`  
+Body: `{ text, scriptId: "{scriptId}_line_{n}", voiceId, provider: "elevenlabs" }`
+
+**Honey Bunny must always have bunny ears in every Veo prompt** — this was a happy Veo accident that became a character feature, now locked in permanently.
+
+**Key audio rules going forward:**
+- `renderMuxedClip` must include `[1:a]apad[aout]` in complexFilter (both hasSub branches)
+- Music mix: amerge+pan only, music at -10dB
+- Never use amix for music
 
 ---
 
 ## OPEN ISSUES
 
-- CTRL vault locked after backend restart — unlock before using trading/vault features
-- SA + CF need 12 testers + 14 days for Play Store production
-- Feature graphics not generated for either game (batches exist in skills/batches/)
-- Add keystore passwords to CTRL vault
+- v7c not yet tested on YouTube — first real confirmation the apad fix works after upload
+- YouTube channel @ReframeAI may still need to be set up
 
 ---
 
-## KEY DECISIONS
+## IMPORTANT CONTEXT FOR NEXT SESSION
 
-- SA: applicationId=com.stackattacker (Play Store), namespace=com.stackattack (Java) — independent
-- Keystores in android/app/ not android/ — file() resolves to app module dir
-- CF daily: levelId=0 sentinel, /daily/submit endpoint, not /submit
-- Trading: bot emits NEW_STRATEGY like TRADE_ORDER, scheduler auto-registers
-- Profanity: bad names become Anonymous on score submit, 400 on /player/name
-
----
-
-## HOW TO START CTRL
-
-pm2 restart ctrl-backend (then unlock vault in CTRL UI)
-
-Or: cd D:\AI Work\Control-Centre && npm run dev (runs all three services)
+- **Only use v7c.** v7, v7-fixed, v7b are all broken (music or sync issues).
+- **Dead-end scripts:** remix-music-v5.cjs and remix-music-v5b.cjs. Do not use.
+- Raw concatenated video (before music) is cached at: `D:\AI Work\.cache\video-pipeline\rf_mq1hvexk_420d2\rf_mq1hvexk_420d2.mp4`
+- All 10 Veo clips have video_path set in DB — future rebuilds need zero Veo spend.
 
 ---
 
-## OTHER PROJECTS
+## HOW TO START THE SYSTEM
 
-- BatonDrop: v2.0.0 in Play Store production review since 2026-05-17
-- WordDrop: paused
-- ctrlplay.games/privacy: effective date 2026-05-31 pushed live
+```
+D:\AI Work\START-ALL.bat
+```
+
+Or manually:
+- Backend: `cd D:\AI Work\Control-Centre && npm run dev:backend`
+- Frontend: `cd D:\AI Work\Control-Centre && npm run dev:frontend`
+
+---
+
+## OTHER ACTIVE PROJECTS
+
+- **CTRLPro** — hospitality SaaS, planning phase, first client conversation pending
+- **BedBouncer** — ESP32 smart alarm, Kickstarter prep, needs product video
+- **Mobile Games** — BatonDrop submitted to Play Store; WordDrop + Cavernborn in planning
+- **Reframe AI** — THIS SESSION. Video 1 done. 19 more scripts ready to produce.
+- **RoadToCtrl** — solopreneur YouTube channel, video ideas auto-appended each /afk
