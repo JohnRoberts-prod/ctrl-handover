@@ -1,124 +1,52 @@
-# CTRL Project Handover
-*Last updated: 2026-06-19 UTC*
-*Session ended: just re-ran the CTRL codebase audit and listed remaining work; /afk called.*
+# SESSION HANDOVER — read this in full before doing anything
+*Written: 2026-06-21 · For: the next Claude Code session, continuing the CTRL Personal product build*
 
 ---
 
-## HOW TO USE THIS DOCUMENT
-You are Claude web picking up a CTRL session. John Roberts is the developer. Read it all first.
-CTRL: `D:\AI Work\Control-Centre\` — Backend Node/Express/TS :3001 · Frontend React/Vite :5173 · Terminal node-pty :3002 · SQLite `D:\AI Work\.ctrl-data.db`.
-Full live backlog: `D:\AI Work\TASKS.md`. Session state: `Control-Centre\SESSION_STATE.md`.
+## 0. READ FIRST — two hard rules (do not break these)
+
+1. **The live CTRL system at `D:\AI Work\Control-Centre\` is OFF-LIMITS for product work.** It is John's daily driver. Never edit it, never `npm install` it, never run/build the standalone product on this PC.
+2. **THIS PC IS SOURCE-EDITING ONLY for the product.** Do **NOT** run `npm install`, `tsc`, `build`, or the app on this machine. The previous session broke John's live CTRL by running `npm install` in the product fork — the CPU spike + duplicate processes destabilised the live backend. **All install / build / run / test happens in the Windows Sandbox (now enabled) or a VM — never on the host.** If you need to type-check or build, do it in the Sandbox.
 
 ---
 
-## WHAT WE WERE BUILDING THIS SESSION
-Mostly **Reframe AI Shorts production** (a big methodology overhaul) plus **CTRL email module** work and a **codebase audit + fixes**. Core CTRL changes: email **priority scoring (P1-P4)**, a **vault dev-lock fix**, a **vitest test suite**, and doc/route tidy-up. No new UI modules; changes were backend + skills/docs.
+## 1. IMMEDIATE: is John's live CTRL back up?
+If CTRL is still dropping/broken: the cause is **duplicate CTRL instances fighting over port 3001** (from a reboot + a stray `npm install`). **Fix = one clean restart:** close all CTRL terminal/cmd windows, then run **`D:\AI Work\START-ALL.bat`** (it kills ports 3001/3002/5173/5174 and starts one clean instance: backend 3001, frontend 5173, terminal 3002, vault auto-unlocks → integrations + MCP reconnect). **John's data is intact and fully backed up** at `Z:\Work\AIBackup\ctrl-backup-2026-06-21\` (605 MB DB + WAL + vault + config). Nothing was corrupted — it was only a process/port tangle.
+
+Also: **delete `D:\CTRL-Product\node_modules`** if still present (`rmdir /s /q D:\CTRL-Product\node_modules`) — it should not exist on this machine.
 
 ---
 
-## CURRENT BUILD STATE
+## 2. WHAT WE'RE BUILDING (the project)
+Turn CTRL into **CTRL Personal** — a sellable, self-installing, **plugin-based** Windows desktop product (Mac later). Uses the customer's **local Claude** (no API key/bill). **Free 3-month beta** via website signup (no billing); production later on **Lemon Squeezy** (paid, plan-gated plugins).
 
-### Recently completed (this session)
-- **Email priority (P1-P4)** — derived on READ via SQL CASE in `routes/email-intelligence.routes.ts` (`?priority=`, `?sort=priority`). Zero tokens. P1 = `has_action AND (is_important OR is_starred)`.
-- **Inbox cleanup** — trashed 282 notification emails via per-id PATCH (bulkTrashBySenders is broken — see issues).
-- **Tests** — `src/backend/test/vault.test.ts` + `finance.test.ts`, 10 passing (`cd src/backend && npm test` / `npx vitest run`).
-- **Vault dev-lock** — `VaultService.tryDevAutoUnlock()` auto-unlocks on boot from `VAULT_DEV_PASSWORD` (gitignored `src/backend/.env`, currently BLANK placeholder).
-- **Border-string dedup** — one `BORDER_SUFFIX` constant in `creative.service.ts`.
-- **Cleanup** — 39 one-off `.cjs` → `scripts/oneoff/`; STATUS.md refreshed; routes documented in `knowledge/recent-backend-additions.md`.
-- **Reframe AI** — rewrote skill-til-info-video.md, skill-reframe-ai-workflow.md, design/reframe-ai-channel.md (v3), CLAUDE.md Reframe section → all video-first/hook-engine.
+**Two source docs (read them):**
+- `D:\AI Work\Control-Centre\skills\skill-release-installer.md` — Electron/NSIS installer, Cloudflare license server, setup wizard, module gating, clean-VM testing.
+- `D:\AI Work\Control-Centre\skills\skill-plugin-architecture.md` — **each module is a self-contained plugin** (local `.js` bundles from Cloudflare R2, checksum-verified, dynamic `import()` at startup). New features ship as plugins, not new installers. Plugins are isolated — one never affects another.
 
-### In progress / next steps
-1. **Roger Milla** Short — test clip + 3-voice audition done (Drive); needs voice pick + video-first build.
-2. **Split `Design.tsx`** (1186 lines) — the one giant file worth it (migrate.ts deferred: DB-corruption risk).
-3. **Email draft-reply (part 2)** — wire `draft-response` to `gmail_*` tools (priority scoring was part 1).
-4. **Maradona → YouTube**; **Costco re-cut** (clean + hook engine).
-5. More tests: email SAFE-MODE (auto-classify never trashes), double-entry zero-sum once built.
+**Folder/sandbox architecture (agreed):** the app installs to **Program Files** (immutable, agent can't edit it). All user data lives under **`%CTRL`** = a user-chosen root (set in the wizard → `config.filesystem.root`): `%CTRL/{.ctrl-config.json,.vault,ctrl-data.db,projects/,documents/,plugins/,.cache/}`. The Claude agent the product runs is **sandboxed to `%CTRL` only** (existing `SANDBOX_ROOT` + `validate-path` middleware; vault/db are on a deny-list even inside it).
 
 ---
 
-## ALL MODULES — STATUS
-| Module | Location | Status | Notes |
-|---|---|---|---|
-| Home | src/frontend/src/modules/home/ | stable | |
-| Claude Tab | src/frontend/src/modules/claude-tab/ | stable | |
-| Gmail/Email | src/frontend/src/modules/gmail/ | active | priority scoring added backend; UI could surface P1 |
-| Tasks | src/frontend/src/modules/tasks/ | stable | Google Tasks |
-| Projects | src/frontend/src/modules/projects/ | stable | |
-| Finance | src/frontend/src/modules/finance/ | building | pence-integer; double-entry not built yet |
-| Trading | src/frontend/src/modules/trading/ | stable | |
-| GitHub | src/frontend/src/modules/github/ | stable | |
-| Cloudflare | src/frontend/src/modules/cloudflare/ | stable | |
-| Brand/Design | src/frontend/src/modules/design/ | active | Design.tsx 1186 lines — split candidate |
-| Settings | src/frontend/src/modules/settings/ | stable | vault unlock lives here |
-| Admin | src/frontend/src/modules/admin/ | stable | |
+## 3. THE PLAN (authoritative governance doc)
+**`D:\CTRL-Product\PROJECT-PLAN.md`** — read it. It has the phases, the **per-run security+code check gate**, the clean-room-per-module QA, risk register, and decision log.
+
+- **Phase 0 ✅ done:** product fork created at **`D:\CTRL-Product\`** (separate repo, package name `ctrl-personal`, fresh git, isolated `.env` → ports 3011/3012/5183 + own `.data` root, no secrets). Live system backed up to NAS.
+- **Phase 1 ← IN PROGRESS (next):** clean personal data + config-ify paths to `config.filesystem.root`. The audit script exists: `D:\CTRL-Product\scripts\audit-personal-data.js`. **~31 files** to fix: `John Roberts`→`config.user.name` (6), hardcoded `D:/AI Work` paths→`config.filesystem.root` (16), `johnbenjaminroberts`→config email (10), `JohnRoberts-prod`→config github (4), `ctrlplay`→config branding (19). `Lane7` = 0 (clean). Also remove the `?? 'D:/AI Work'` fallbacks and John's personal seed/migrate project rows. Exit gate: audit=0, type-check clean (in Sandbox), first clean commit.
+- Phases 2-10: Cloudflare (license + plugin registry) → Electron shell+wizard → plugin engine (prove with a hello-world plugin first) → modules as plugins one-at-a-time → packaging + clean-VM QA → website/beta signup → beta → production (Lemon Squeezy) → Mac.
+
+**Open decisions (not blocking):** beta length (default per-signup 90 days), production pricing tiers, which modules in the beta (default all).
 
 ---
 
-## FILES CREATED OR MODIFIED THIS SESSION
-```
-src/backend/src/routes/email-intelligence.routes.ts — added derived priority (CASE), ?priority=, ?sort=priority
-src/backend/src/services/vault.service.ts          — added tryDevAutoUnlock()
-src/backend/src/server.ts                          — call tryDevAutoUnlock on listening; import VaultService
-src/backend/src/services/creative.service.ts       — BORDER_SUFFIX constant (deduped x3)
-src/backend/src/services/video-generation.service.ts — (earlier) Veo personGeneration allow_all/allow_adult
-src/backend/test/vault.test.ts, finance.test.ts    — new (10 tests); vitest.config.ts; package.json test scripts
-src/backend/.env                                   — VAULT_DEV_PASSWORD= placeholder (blank)
-STATUS.md, knowledge/recent-backend-additions.md, knowledge/cowork-plugins-integration.md — docs
-skills/ (5 new Cowork-adapted), SESSION_STATE.md, LEARNINGS.md — knowledge
-scripts/oneoff/ — 39 moved .cjs ; .gitignore — stray .db
-```
+## 4. WHAT ELSE HAPPENED THIS SESSION (context)
+- Built a **Network/UniFi dashboard** INTO the live CTRL (real changes in `D:\AI Work\Control-Centre`): backend `services/unifi.service.ts` + `routes/unifi.routes.ts` (mounted `/api/unifi` in `server.ts`), config `integrations.unifi.host=192.168.1.1`, vault key `unifi_api_key`; frontend `modules/network/` + `services/unifi.service.ts` + nav/AppShell/shell.types wiring. These are **uncommitted** in the live system (Control-Centre is not a git repo). This is legit work John wanted — leave it; just be aware it's there.
+- Diagnosed John's home network (UniFi): root issues = single AP coverage (U6 Pro was removed), **2.4GHz-only main SSID `mywifi`** forcing congestion, and a **100M powerline uplink** to the upstairs switch (the real bottleneck). Added an IW-HD AP. Recommended fixes given (5GHz on mywifi, min-RSSI, MoCA/Cat6 to replace powerline, fix Plex port-7 cable).
+- Shipped Reframe AI videos (Eiffel, Vietnam Real-vs-AI), HeyGen avatar integration in CTRL's Design module, BedBouncer SEO. (All in the LIVE system — done/stable.)
 
 ---
 
-## RECENT GIT COMMITS
-Control-Centre is NOT a git repo (no history). Changes are on disk only — consider `git init` + backup.
+## 5. HOW TO RESUME
+You (next session) should: confirm John's live CTRL is back (Section 1), then continue **Phase 1** of the product build **in `D:\CTRL-Product` only**, doing any install/typecheck **in the Windows Sandbox, not on the host**. Follow `D:\CTRL-Product\PROJECT-PLAN.md` and its per-run gate.
 
----
-
-## OPEN ISSUES / KNOWN BUGS
-- `VAULT_DEV_PASSWORD` is a BLANK placeholder — vault still locks on every backend edit until John sets it.
-- `bulkTrashBySenders` (cache/email-cache.service) returns 0: it JOINs `email_labels` label_id='INBOX' which the system never populates (uses the `is_archived` flag). Trash via per-id `PATCH /api/gmail/messages/:id {action:'trash'}`.
-- Giant files: migrate.ts 2176, Design.tsx 1186, AccountsTab 968, finance.service 921, email-intelligence.routes 807.
-- ClickUp integration is deprecated (Discord replaced it) but still mounted — kept intentionally until the Discord migration completes; do NOT extend it.
-
----
-
-## KEY DECISIONS MADE THIS SESSION
-- Email priority derived on READ (no schema change, zero tokens).
-- Vault dev-unlock via env var (opt-in, never prod) — chosen over caching the key to disk.
-- migrate.ts deliberately NOT split (append-only, low impact, high split risk).
-- Reframe AI: VIDEO-FIRST beats stills (retention data); clean language mandatory; Reddit told in-character first-person.
-
----
-
-## BACKEND API ENDPOINTS ADDED/CHANGED THIS SESSION
-- `GET /api/email/list` — now returns `priority` (1-4); supports `?priority=N` and `?sort=priority`.
-- (earlier this session) `POST /api/design/photo`, `POST /api/video-pipeline/tts-timed`, `POST /api/drive/upload`.
-
----
-
-## DATABASE CHANGES THIS SESSION
-None. Priority is computed on read (no migration). No new tables/columns.
-
----
-
-## IMPORTANT CONTEXT FOR NEXT SESSION
-- Set `VAULT_DEV_PASSWORD` in `src/backend/.env` FIRST — otherwise every backend edit locks the vault and ~17 services break until manual unlock (Settings → Vault).
-- Video gen runs on **Vertex** (`ctrl-493720`, `us-central1`) — only the stable `veo-3.0-*` line exists; the `veo-3.1-*-preview` IDs from `/api/video/models` 404 on Vertex.
-- Reframe AI source of truth: `D:\AI Work\YouTube\skill-shorts-hook-engine.md` (frame one + retention). Pipeline: `skill-til-info-video.md`.
-
----
-
-## HOW TO START THE SYSTEM
-```
-D:\AI Work\START-ALL.bat
-```
-Or: Backend `npm run dev:backend` · Frontend `npm run dev:frontend` · Terminal `cd src/terminal-server && npm run dev`.
-
----
-
-## PROJECTS OUTSIDE CTRL
-- **Reframe AI** (YouTube Shorts) — video-first overhaul this session; Roger Milla half-built.
-- **BedBouncer** — Kickstarter prep; site review done, needs a product demo video; confirm £89 pricing.
-- **CTRLPro** — hospitality SaaS; positioning: a vertical "role pack" vs Anthropic Cowork.
-- **Mobile Games** — BatonDrop (repo pushed), WordDrop, etc.
+Full prior transcript (if deep detail needed): `C:\Users\admin\.claude\projects\d--AI-Work\28bf5273-ea29-486f-b0e1-afe2f6560b55.jsonl`
