@@ -1,197 +1,154 @@
 # CTRL Project Handover
 *Last updated: 2026-06-25 UTC*
-*Session ended: SCP-3000 v3 build script completed and skill rewritten as runbook. Switching focus to CTRLSignage.*
+*Session ended: Completing /afk after building CTRLSignage handover + next-chat paste text*
 
 ---
 
 ## HOW TO USE THIS DOCUMENT
 
-You are Claude web browser picking up a CTRL development session.
+You are Claude Code (or Claude web) picking up a CTRL development session.
 John Roberts is the developer. Read this entire document before responding.
 
 The CTRL codebase is at: `D:\AI Work\Control-Centre\`
 Backend: Node.js + Express + TypeScript on port 3001
-Frontend: React 18 + Vite + TypeScript on port 5173
+Frontend: React 18 + Vite + TypeScript on port 5173 (port varies — check pm2 logs)
+Terminal server: node-pty WebSocket on port 3002
 Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db`
+CTRL runs on pm2 — NEVER use npm run dev manually. Use /restartctrl if CTRL is down.
 
 ---
 
 ## WHAT WE WERE BUILDING THIS SESSION
 
-Two workstreams this session:
+Two workstreams:
 
-**1. SCP-3000 v3 video (Reframe AI)**
-Complete rebuild of the SCP-3000 Anantashesha video using the correct Veo + Kling tool split. The v2 had used Kling for all 5 clips, which was wrong — Kling should only be used for continuous chains where the last frame of clip N becomes the first frame of clip N+1. Independent scenes (ops room, deck aftermath) should use Veo. The build script has been rewritten and the SCP skill updated as a fully self-contained runbook. The script is ready to run but has NOT been executed yet.
+1. **Reframe AI — SCP-049 plague doctor video:** completed 5-clip Kling-only narrated video (Format B), fixed jump cuts with true last-frame extraction (`ffmpeg -sseof -0.1 -i clip.mp4 -vframes 1 frame.jpg`), mixed TTS + horror music, uploaded private to YouTube (ID: SFY6M_NDCqI).
 
-**2. CTRLSignage subscriber loading (CTRL)**
-The Subscribers module was failing with "Unknown subscriber source" for CTRLSignage. Fixed by: (a) restarting pm2 so the backend picked up the ctrlsignage SOURCES entry, (b) generating a new Cloudflare OPERATOR_KEY, (c) pushing it to Cloudflare Workers with `wrangler secret put OPERATOR_KEY --env production`, (d) storing it in the CTRL vault as `signage_operator_key`. CTRLSignage waitlist now loads 2 test entries correctly.
+2. **CTRL — Meshy AI integration:** built full Meshy 3D model generation into the Design module. Backend service + routes + frontend panel all TypeScript-clean. Needs vault key `meshy_api_key` added before it will work.
+
+UE5 MCP was also wired up (unreal-mcp added to Claude settings.json pointing at localhost:8137) but UE5 was still installing at session end.
 
 ---
 
 ## CURRENT BUILD STATE
 
-### Completed this session
+### Recently completed
 
-- `D:\AI Work\YouTube\reframe-ai\Videos\scp-3000-eel\v3\build-scp3000-v3.cjs` — rewritten with correct Veo + Kling routing and all API calls using verified response shapes
-- `D:\AI Work\YouTube\reframe-ai\skills\skill-scp-video.md` — fully rewritten as self-contained runbook with complete API docs for all 6 endpoints, ffmpeg two-pass docs, cost guide, full checklist
-- `D:\AI Work\Control-Centre\src\frontend\src\modules\subscribers\Subscribers.tsx` — fixed hint message to show `signage_operator_key` for CTRLSignage source (not `ctrlsignage_admin_secret`)
-- CTRLSignage OPERATOR_KEY: generated, pushed to Cloudflare, stored in vault — subscribers loading
+- **SCP-049 Plague Doctor video** — 25.3s, 5 Kling clips, ElevenLabs TTS narration, horror ambient music. YouTube private ID: SFY6M_NDCqI.
+- **Meshy backend** — `src/backend/src/services/meshy.service.ts` (text-to-3D, image-to-3D, poll, download) + `src/backend/src/routes/meshy.routes.ts`. Registered in server.ts.
+- **Meshy frontend** — `src/frontend/src/modules/design/MeshyPanel.tsx`, "Meshy 3D" tab in Design.tsx, CSS in design.css.
+- **skill-scp-video.md** — Format B (narrated Kling-only chain) fully documented.
+- **/restartctrl skill** — `C:\Users\admin\.claude\skills\restartctrl\SKILL.md` created and registered in CLAUDE.md.
+- **UE5 MCP config** — `unreal-mcp` added to `C:\Users\admin\.claude\settings.json` (port 8137).
 
-### In progress right now
+### In progress
 
-SCP-3000 v3 build script is ready but not yet run. Audio files (TTS x7, SFX x3, music) were generated in a previous aborted run and exist on disk. The build will skip phases 1-3 and proceed from Phase 4 (starting image for Kling clip 2).
+Nothing half-done in code. Meshy is complete but untested (needs vault key).
 
-### Pending / next steps
+### Next steps (ordered)
 
-1. Run SCP-3000 v3 build: `node build-scp3000-v3.cjs` from `D:\AI Work\YouTube\reframe-ai\Videos\scp-3000-eel\v3\`
-2. Watch the video — confirm creature chain holds identity across clips 2-4
-3. If v3 > v2, publish v3 and delete v1 (NS5YcJu4bUI)
-4. **NEXT FOCUS: CTRLSignage system build** — see architecture at `D:\AI Work\CTRLSignage\design\CTRL-SIGNAGE-ARCHITECTURE.md`
-
----
-
-## KEY TECHNICAL FACTS FOR THE NEXT SESSION
-
-### SCP-3000 v3 tool routing
-```
-Clip 1 (8s): Veo — ops room (independent scene)
-Clip 2 (5s): Kling — diver + creature (chain start, needs starting image)
-Clip 3 (5s): Kling — body section passes (chain from clip 2 last frame)
-Clip 4 (5s): Kling — hauled to surface (chain from clip 3 last frame)
-Clip 5 (8s): Veo — deck aftermath (independent scene)
-```
-
-### API response shapes (CRITICAL — get these wrong and the build fails silently)
-
-| Endpoint | Method | Response shape |
-|----------|--------|---------------|
-| /api/video-pipeline/tts-timed | POST JSON | { success, data: { audioPath } } |
-| /api/video-pipeline/sfx | POST JSON | { success, data: { audioPath } } |
-| /api/video-pipeline/music | POST JSON | { success, data: { audioPath } } |
-| /api/design/photo | POST JSON | { ok, jobId } — NOT { success, data } |
-| /api/design/job/:id | GET | { ok, status:'done'\|'failed', url } — status is 'done' not 'completed' |
-| /api/video-generation/generate | POST **multipart** | { success, data: { generationId } } |
-| /api/video-generation/status/:id | GET | { success, data: { status:'complete'\|'failed', outputPath } } — 'complete' not 'completed' |
-| /api/video-studio/generate | POST JSON | { success, data: { jobId } } |
-| /api/video-studio/jobs/:id | GET | { success, data: { status:'completed'\|'failed', videoPath } } — 'completed' not 'complete' |
-| /api/video-studio/extract-frame | POST JSON | { success, data: { framePath } } |
-| /api/social/youtube/videos | POST **multipart** | { success, data: { videoId } } — always upload PRIVATE |
-
-**Veo requires multipart/form-data** (not JSON). Use the `apiPostMultipart()` helper in the build script.
-**PROJECT_ID for Veo** = `'reframe-ai'` (from projects table — Reframe AI project ID).
-**CHANNEL_ID for YouTube** = `'d21ea761-a020-499d-8db3-99b1a2d4a52a'` (CTRL UUID, not a UCxxx).
-
-### xfade offsets for mixed clip durations
-```
-CLIP_DURATIONS = [8, 5, 5, 5, 8]  // Veo=8s, Kling=5s
-FADE_DUR = 0.12
-offsets = [7.88, 12.76, 17.64, 22.52]
-Formula: cumulative += duration[i] - fadeDur for each transition
-```
-
-### ElevenLabs limits
-- Max SFX duration: 30s. Never exceed.
-- Concurrent limit: 3. Use semaphore(2) in build scripts.
-- Error: 429 concurrent_limit_exceeded
-
-### ffmpeg two-pass assembly
-- Pass 1 (xfade): CapCut ffmpeg at `C:\Users\admin\AppData\Local\CapCut\Apps\8.7.0.3685\ffmpeg.exe` — outputs mjpeg AVI (NOT h264_mf — crashes at portrait resolution)
-- Pass 2 (encode): @ffmpeg-installer at `D:\AI Work\Control-Centre\node_modules\@ffmpeg-installer\win32-x64\ffmpeg.exe` — outputs h264 MP4
-- Pass 3: composite silent.mp4 + mixed-audio.mp3 → final.mp4
-
-### CTRLSignage system state
-- Vault key: `signage_operator_key` = `154cf3938992bdd5c9bc9d3b5bc7f26e39fd1938cd5ed7e1`
-- Cloudflare OPERATOR_KEY set on production Worker
-- Subscribers UI working — 2 waitlist test entries showing
-- Architecture: `D:\AI Work\CTRLSignage\design\CTRL-SIGNAGE-ARCHITECTURE.md`
-- Status: Steps 1+2 complete (foundation + auth core). Next: Step 3 (portal auth) + Step 4 (media upload)
-- Open decisions (from memory): product name/domain, DB (D1 vs Postgres), operator auth approach
+1. Add vault key `meshy_api_key` in CTRL Settings tab (value from meshy.ai dashboard)
+2. UE5 setup: enable Python Editor Script Plugin + Editor Scripting Utilities, start MCP server on 8137, restart Claude Code
+3. CTRLSignage Steps 3+4 — portal auth (React app + Google OAuth) + media upload (R2 presigned PUT + Queue thumbnail). Full handover: `D:\AI Work\CTRLSignage\NEXT-SESSION-HANDOVER.md`
+4. SCP-3000 v3 — build script at `D:\AI Work\YouTube\reframe-ai\Videos\scp-3000-eel\v3\build-scp3000-v3.cjs` (upload step was failing with ECONNRESET)
 
 ---
 
 ## FILES CREATED OR MODIFIED THIS SESSION
 
 ```
-D:\AI Work\YouTube\reframe-ai\Videos\scp-3000-eel\v3\build-scp3000-v3.cjs
-  — Complete rewrite: Veo for clips 1+5, Kling chain for clips 2-4, all API calls corrected
-
-D:\AI Work\YouTube\reframe-ai\skills\skill-scp-video.md
-  — Complete rewrite as self-contained runbook: 14 sections, full API reference, build checklist
-
-D:\AI Work\YouTube\reframe-ai\SESSION_STATE.md
-  — Updated with current build state
-
-D:\AI Work\YouTube\reframe-ai\LEARNINGS.md
-  — 8 new entries: Veo/Kling routing, API response shapes, xfade offsets, CTRLSignage vault key
-
-D:\AI Work\roadtoctrl\knowledge\video-ideas.md
-  — 2 new video ideas prepended for this session
-
-D:\AI Work\Control-Centre\src\frontend\src\modules\subscribers\Subscribers.tsx
-  — Fixed hint message: signage_operator_key (not ctrlsignage_admin_secret) for ctrlsignage tab
+src/backend/src/services/meshy.service.ts       NEW — Meshy API service
+src/backend/src/routes/meshy.routes.ts          NEW — /api/meshy/* routes
+src/backend/src/server.ts                       MODIFIED — meshy router added
+src/frontend/src/modules/design/MeshyPanel.tsx  NEW — Meshy tab UI
+src/frontend/src/modules/design/Design.tsx      MODIFIED — Meshy 3D tab added
+src/frontend/src/modules/design/design.css      MODIFIED — meshy CSS classes
+SESSION_STATE.md                                UPDATED
+LEARNINGS.md                                    UPDATED (pm2, Meshy)
+D:\AI Work\YouTube\reframe-ai\skills\skill-scp-video.md   UPDATED — Format B added
+D:\AI Work\YouTube\reframe-ai\LEARNINGS.md               UPDATED
+D:\AI Work\roadtoctrl\knowledge\video-ideas.md            UPDATED — 2 new video ideas
+C:\Users\admin\.claude\skills\restartctrl\SKILL.md        NEW
+C:\Users\admin\.claude\CLAUDE.md                          MODIFIED — restartctrl registered
+C:\Users\admin\.claude\settings.json                      MODIFIED — unreal-mcp added
+D:\AI Work\CTRLSignage\NEXT-SESSION-HANDOVER.md           NEW — full CTRLSignage session handover
+D:\AI Work\NEXT-CHAT-CONTEXT.md                           NEW — paste-in text for new chat window
 ```
-
----
-
-## VIDEOS MADE SO FAR (Reframe AI)
-
-| SCP | Version | YouTube ID | Status |
-|-----|---------|-----------|--------|
-| 682x999 | v1 | nTZQbF1lT7g | Live |
-| 682x999 | v2 | FDxTGUxXex8 | Live — did well |
-| 3000 | v1 | NS5YcJu4bUI | Private — DELETE (narration format, wrong) |
-| 3000 | v2 | J-Kgmf4tQH8 | Private — pending review, may be superseded by v3 |
-| 3000 | v3 | — | Build script ready, not yet run |
 
 ---
 
 ## OPEN ISSUES / KNOWN BUGS
 
-- SCP-3000 v1 (NS5YcJu4bUI) still on YouTube as private — needs deletion
-- SCP-3000 v3 not yet built or uploaded
-- No Remotion captions on any SCP video yet
-- CTRLSignage Steps 3+4 not yet built
-- 3 open decisions on CTRLSignage before next session (see architecture doc)
+- Meshy tab needs `meshy_api_key` in vault before it will work
+- UE5 MCP not connected yet (UE5 still installing, plugins not enabled)
+- CTRL frontend port unstable — stray Vite processes may occupy 5173-5178. Use /restartctrl.
+- pm2 ctrl-backend had 93 restarts from earlier in session — seems stable now
+- SCP-3000 v3 upload step fails with ECONNRESET
+- SCP-049 mask colour inconsistency (white/black shifts) — Kling API has no character reference. Acceptable per John.
 
 ---
 
 ## KEY DECISIONS MADE THIS SESSION
 
-1. **Veo for independent scenes, Kling for continuous chains** — never mix this up again
-2. **SCP skill is now the source of truth** — all API docs, response shapes, gotchas, checklist in one file
-3. **Build scripts must use apiPostMultipart() for Veo** — not apiPost()
-4. **Status strings differ by tool**: Veo='complete', Kling='completed', Images='done'
+- **Meshy vault key name:** `meshy_api_key`
+- **CTRLSignage operator vault key:** `signage_operator_key`
+- **Gloomstomper uses AI video with character reference** on Kling website, NOT Unreal Engine
+- **Format B for humanoid SCPs:** 5-clip Kling-only chain, single narrator, hard cuts, no xfade
+- **True last-frame rule:** always `ffmpeg -sseof -0.1 -i clip.mp4 -vframes 1 frame.jpg`. Never mid-clip.
+- **CTRL runs on pm2:** never `npm run dev`. /restartctrl handles full clean restart.
+- **CTRLSignage domain:** ctrlsignage.co.uk (locked 2026-06-23)
 
 ---
 
-## IMPORTANT CONTEXT FOR NEXT SESSION (CTRLSignage)
+## BACKEND API ENDPOINTS ADDED THIS SESSION
 
-The next session focuses on CTRLSignage. Key context:
-- Architecture doc at `D:\AI Work\CTRLSignage\design\CTRL-SIGNAGE-ARCHITECTURE.md`
-- Steps 1+2 complete: Cloudflare stack scaffolded, ECDSA auth core built
-- Next: Step 3 (portal auth — operator login for the management portal) + Step 4 (media upload to R2)
-- 3 open decisions to resolve before building: product name/domain, D1 vs Postgres for DB, operator auth approach
-- Operator secret key: `signage_operator_key` in vault, pushed to Cloudflare production
-- Subscribers loading in CTRL (2 test entries)
+```
+POST /api/meshy/generate/text   — start text-to-3D (objectPrompt, stylePrompt, artStyle, targetFormats, enablePbr)
+POST /api/meshy/generate/image  — start image-to-3D (imageUrl, texturePrompt, targetFormats, enablePbr, poseMode)
+GET  /api/meshy/jobs/:jobId     — poll job (status, progress, modelUrls, localPaths, thumbnailUrl, error)
+All routes behind requireVaultUnlocked middleware.
+```
+
+---
+
+## DATABASE CHANGES THIS SESSION
+
+None — no migrations this session.
+
+---
+
+## IMPORTANT CONTEXT FOR NEXT SESSION
+
+1. **Run /restartctrl** first if CTRL seems down
+2. **Before testing Meshy:** add `meshy_api_key` to vault in CTRL Settings
+3. **CTRLSignage session:** read `D:\AI Work\CTRLSignage\NEXT-SESSION-HANDOVER.md` first
+4. **New chat window paste-in:** contents of `D:\AI Work\NEXT-CHAT-CONTEXT.md`
+5. **Audio codec gotcha:** always `-c:a libmp3lame` for .mp3 output, never `-c:a aac`
+6. **Confirm before paid API calls** — Meshy, ElevenLabs, Veo, Kling all cost money
 
 ---
 
 ## HOW TO START THE SYSTEM
 
-```
-D:\AI Work\START-ALL.bat
+CTRL runs on pm2:
+```powershell
+# If pm2 is not running at all:
+cd "D:\AI Work\Control-Centre"
+& "C:\Users\admin\AppData\Roaming\npm\pm2.cmd" start ecosystem.config.js
+
+# For a clean restart:
+# Use /restartctrl skill in Claude Code
 ```
 
-Or manually:
-- Backend: `cd D:\AI Work\Control-Centre && npx pm2 start ecosystem.config.js` (or `npm run dev:backend`)
-- Frontend: `cd D:\AI Work\Control-Centre && npm run dev:frontend`
+Verify: http://localhost:3001/api/health
 
 ---
 
-## PROJECTS OUTSIDE CTRL (for full context)
+## PROJECTS OUTSIDE CTRL
 
-- **CTRLSignage** — digital signage SaaS, Cloudflare stack, Steps 1+2 done, next: portal auth
-- **Reframe AI** — @ReframeAI YouTube channel, SCP-3000 v3 building
-- **BedBouncer** — ESP32 smart alarm, Kickstarter prep, needs product video
-- **CTRLPro** — hospitality SaaS, planning phase, one potential client, no Lane7 connection
-- **Mobile Games** — BatonDrop in Google Play review, others in development
+- **CTRLSignage** — Cloudflare signage SaaS, Steps 1+2 done. Next: portal auth + media upload. `D:\AI Work\CTRLSignage\`
+- **Reframe AI** — SCP video pipeline (Format B). `D:\AI Work\YouTube\reframe-ai\`
+- **BedBouncer** — ESP32 alarm, Kickstarter prep. `D:\AI Work\BedBouncer\`
+- **CTRLPro** — Hospitality SaaS, planning phase. `D:\AI Work\CtrlPro\`
+- **BatonDrop** — Mobile game, v2.0.0 in Google Play review. `D:\AI Work\Mobile-Games\games\batondrop\`
+- **RoadToCtrl** — Solopreneur YouTube channel. `D:\AI Work\roadtoctrl\`
