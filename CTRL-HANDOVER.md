@@ -1,52 +1,135 @@
-# SESSION HANDOVER — read this in full before doing anything
-*Written: 2026-06-21 · For: the next Claude Code session, continuing the CTRL Personal product build*
+# CTRL Project Handover
+*Last updated: 2026-06-25 UTC*
+*Session ended: SCP-3000 Anantashesha v2 built and uploaded to YouTube Studio (private). Running /afk.*
 
 ---
 
-## 0. READ FIRST — two hard rules (do not break these)
+## HOW TO USE THIS DOCUMENT
 
-1. **The live CTRL system at `D:\AI Work\Control-Centre\` is OFF-LIMITS for product work.** It is John's daily driver. Never edit it, never `npm install` it, never run/build the standalone product on this PC.
-2. **THIS PC IS SOURCE-EDITING ONLY for the product.** Do **NOT** run `npm install`, `tsc`, `build`, or the app on this machine. The previous session broke John's live CTRL by running `npm install` in the product fork — the CPU spike + duplicate processes destabilised the live backend. **All install / build / run / test happens in the Windows Sandbox (now enabled) or a VM — never on the host.** If you need to type-check or build, do it in the Sandbox.
+You are Claude web browser picking up a CTRL development session.
+John Roberts is the developer. Read this entire document before responding.
 
----
-
-## 1. IMMEDIATE: is John's live CTRL back up?
-If CTRL is still dropping/broken: the cause is **duplicate CTRL instances fighting over port 3001** (from a reboot + a stray `npm install`). **Fix = one clean restart:** close all CTRL terminal/cmd windows, then run **`D:\AI Work\START-ALL.bat`** (it kills ports 3001/3002/5173/5174 and starts one clean instance: backend 3001, frontend 5173, terminal 3002, vault auto-unlocks → integrations + MCP reconnect). **John's data is intact and fully backed up** at `Z:\Work\AIBackup\ctrl-backup-2026-06-21\` (605 MB DB + WAL + vault + config). Nothing was corrupted — it was only a process/port tangle.
-
-Also: **delete `D:\CTRL-Product\node_modules`** if still present (`rmdir /s /q D:\CTRL-Product\node_modules`) — it should not exist on this machine.
+This session was entirely focused on the Reframe AI YouTube channel (@ReframeAI), not the CTRL codebase.
 
 ---
 
-## 2. WHAT WE'RE BUILDING (the project)
-Turn CTRL into **CTRL Personal** — a sellable, self-installing, **plugin-based** Windows desktop product (Mac later). Uses the customer's **local Claude** (no API key/bill). **Free 3-month beta** via website signup (no billing); production later on **Lemon Squeezy** (paid, plan-gated plugins).
+## WHAT WE WERE BUILDING THIS SESSION
 
-**Two source docs (read them):**
-- `D:\AI Work\Control-Centre\skills\skill-release-installer.md` — Electron/NSIS installer, Cloudflare license server, setup wizard, module gating, clean-VM testing.
-- `D:\AI Work\Control-Centre\skills\skill-plugin-architecture.md` — **each module is a self-contained plugin** (local `.js` bundles from Cloudflare R2, checksum-verified, dynamic `import()` at startup). New features ship as plugins, not new installers. Plugins are isolated — one never affects another.
-
-**Folder/sandbox architecture (agreed):** the app installs to **Program Files** (immutable, agent can't edit it). All user data lives under **`%CTRL`** = a user-chosen root (set in the wizard → `config.filesystem.root`): `%CTRL/{.ctrl-config.json,.vault,ctrl-data.db,projects/,documents/,plugins/,.cache/}`. The Claude agent the product runs is **sandboxed to `%CTRL` only** (existing `SANDBOX_ROOT` + `validate-path` middleware; vault/db are on a deny-list even inside it).
+Rebuilt SCP-3000 "Anantashesha" from scratch in the correct acted scene format. V1 (narration/documentary) was wrong and scrapped. V2 uses 3-voice character dialogue (DR. CHEN/George, TECH RIVERS/Adam, D-CLASS 3841/Sam), 5 ElevenLabs SFX tracks, dark ambient music, and 6 Kling clips via two-pass ffmpeg. Uploaded private to YouTube ID J-Kgmf4tQH8. Three build failures fixed along the way. John raised a cost concern: Kling is ~$5.60-7 per video, unsustainable pre-monetisation.
 
 ---
 
-## 3. THE PLAN (authoritative governance doc)
-**`D:\CTRL-Product\PROJECT-PLAN.md`** — read it. It has the phases, the **per-run security+code check gate**, the clean-room-per-module QA, risk register, and decision log.
+## CURRENT BUILD STATE
 
-- **Phase 0 ✅ done:** product fork created at **`D:\CTRL-Product\`** (separate repo, package name `ctrl-personal`, fresh git, isolated `.env` → ports 3011/3012/5183 + own `.data` root, no secrets). Live system backed up to NAS.
-- **Phase 1 ← IN PROGRESS (next):** clean personal data + config-ify paths to `config.filesystem.root`. The audit script exists: `D:\CTRL-Product\scripts\audit-personal-data.js`. **~31 files** to fix: `John Roberts`→`config.user.name` (6), hardcoded `D:/AI Work` paths→`config.filesystem.root` (16), `johnbenjaminroberts`→config email (10), `JohnRoberts-prod`→config github (4), `ctrlplay`→config branding (19). `Lane7` = 0 (clean). Also remove the `?? 'D:/AI Work'` fallbacks and John's personal seed/migrate project rows. Exit gate: audit=0, type-check clean (in Sandbox), first clean commit.
-- Phases 2-10: Cloudflare (license + plugin registry) → Electron shell+wizard → plugin engine (prove with a hello-world plugin first) → modules as plugins one-at-a-time → packaging + clean-VM QA → website/beta signup → beta → production (Lemon Squeezy) → Mac.
+### Completed this session
+- Rewrote skill-scp-video.md: acted scene format, build pipeline gotchas, cost rules
+- New scene script: D:\AI Work\YouTube\reframe-ai\Videos\scp-3000-eel\v2\script-v2.md
+- New build script: D:\AI Work\YouTube\reframe-ai\Videos\scp-3000-eel\v2\build-scp3000-v2.cjs
+- Fixed 3 build failures (ElevenLabs SFX 30s max, concurrent semaphore, amix normalize param)
+- SCP-3000 v2 uploaded private: YouTube ID J-Kgmf4tQH8
 
-**Open decisions (not blocking):** beta length (default per-signup 90 days), production pricing tiers, which modules in the beta (default all).
+### In progress
+Nothing. Build complete. Pending John's review in YouTube Studio.
+
+### Next steps
+1. Review scp3000-v2-final.mp4 in YouTube Studio
+2. Fix audio if needed: delete mixed-audio.mp3 and re-run build script (clips all cached)
+3. Add Remotion captions (movie subtitle format) - not yet done
+4. Delete wrong v1 upload (NS5YcJu4bUI) once v2 approved
+5. Build reusable clip library BEFORE next SCP video (see cost section)
+6. Agree next SCP number (354 Red Pool or 3199 are candidates)
 
 ---
 
-## 4. WHAT ELSE HAPPENED THIS SESSION (context)
-- Built a **Network/UniFi dashboard** INTO the live CTRL (real changes in `D:\AI Work\Control-Centre`): backend `services/unifi.service.ts` + `routes/unifi.routes.ts` (mounted `/api/unifi` in `server.ts`), config `integrations.unifi.host=192.168.1.1`, vault key `unifi_api_key`; frontend `modules/network/` + `services/unifi.service.ts` + nav/AppShell/shell.types wiring. These are **uncommitted** in the live system (Control-Centre is not a git repo). This is legit work John wanted — leave it; just be aware it's there.
-- Diagnosed John's home network (UniFi): root issues = single AP coverage (U6 Pro was removed), **2.4GHz-only main SSID `mywifi`** forcing congestion, and a **100M powerline uplink** to the upstairs switch (the real bottleneck). Added an IW-HD AP. Recommended fixes given (5GHz on mywifi, min-RSSI, MoCA/Cat6 to replace powerline, fix Plex port-7 cable).
-- Shipped Reframe AI videos (Eiffel, Vietnam Real-vs-AI), HeyGen avatar integration in CTRL's Design module, BedBouncer SEO. (All in the LIVE system — done/stable.)
+## THE COST PROBLEM - MUST ADDRESS BEFORE NEXT BUILD
+
+Kling spend per video: ~$5.60-7 (kling-video-o1 at ~$0.14/s, 40s footage).
+V1 (wrong format, scrapped) was ~$5 wasted. Channel not yet monetised.
+
+Fix before next build:
+1. Reusable clip library at D:\AI Work\YouTube\reframe-ai\Videos\_clip-library\
+   - Foundation monitoring room (generic - all SCPs share it)
+   - Submarine airlock interior (generic)
+   - Submarine exterior (generic)
+   Generate ONCE, reuse forever. Most clips per video become free.
+2. 5s clips only (no 10s). The 2x 10s clips in v2 cost as much as 4x 5s clips.
+3. kling-video-o1 for creature shots only; cheaper model for environments.
+Target: under $3 per video.
 
 ---
 
-## 5. HOW TO RESUME
-You (next session) should: confirm John's live CTRL is back (Section 1), then continue **Phase 1** of the product build **in `D:\CTRL-Product` only**, doing any install/typecheck **in the Windows Sandbox, not on the host**. Follow `D:\CTRL-Product\PROJECT-PLAN.md` and its per-run gate.
+## TECHNICAL REFERENCE
 
-Full prior transcript (if deep detail needed): `C:\Users\admin\.claude\projects\d--AI-Work\28bf5273-ea29-486f-b0e1-afe2f6560b55.jsonl`
+Two-pass ffmpeg assembly (permanent pattern):
+  Pass 1: CapCut ffmpeg - xfade - mjpeg AVI
+    Path: C:\Users\admin\AppData\Local\CapCut\Apps\8.7.0.3685\ffmpeg.exe
+    Codec: -c:v mjpeg -q:v 2 (NOT h264_mf - crashes at 1080x1920 portrait)
+  Pass 2: @ffmpeg-installer - transcode mjpeg - libx264 silent MP4
+    Path: D:\AI Work\Control-Centre\node_modules\@ffmpeg-installer\win32-x64\ffmpeg.exe
+  Pass 3: composite silent MP4 + mixed-audio.mp3 - final MP4
+
+ElevenLabs gotchas:
+  SFX max: 30s per request. Cap ambient at 22s.
+  Concurrent limit: 3. Use semaphore(2) in build scripts.
+  amix normalize=0 NOT supported in @ffmpeg-installer ffmpeg.
+  Fix: amix=inputs=N:duration=first[amixed];[amixed]volume=N[aout]
+
+Voice casting (locked):
+  Foundation Senior: George - JBFqnCBsd6RMkjVDRZzb
+  Foundation Tech:   Adam   - pNInz6obpgDQGcFmaJgB
+  D-Class:           Sam    - yoZ06aMxZJJ28mfd3POQ
+  Field Agent:       Antoni - ErXwobaYiN019PkySvjV
+
+CTRL API endpoints for SCP builds:
+  POST /api/video-pipeline/tts-timed  { text, voiceId, scriptId? } - audioPath, durationSeconds, words
+  POST /api/video-pipeline/sfx        { prompt, durationSeconds, filename? } - audioPath
+  POST /api/video-pipeline/music      { prompt, lengthMs, forceInstrumental? } - audioPath
+  POST /api/video-studio/generate     { image, prompt, duration, model } - jobId
+  GET  /api/video-studio/jobs/:jobId  - status, videoPath
+  POST /api/design/photo              { prompt } - jobId
+  GET  /api/design/job/:id            - status, url (/api/design/gallery-file/<filename>)
+  POST /api/social/youtube/videos     multipart: channelId, title, privacyStatus, video
+  Gallery URL: /api/design/gallery-file/<f> - D:\AI Work\.cache\generated-images\<f>
+
+---
+
+## SCP VIDEOS LOG
+
+SCP 682x999 Tickle Incident v1:  nTZQbF1lT7g  (live, 3 clips 15s)
+SCP 682x999 Tickle Incident v2:  FDxTGUxXex8  (live, 5 clips 25s - did well)
+SCP 3000 Anantashesha v1:        NS5YcJu4bUI  (private - WRONG FORMAT - delete)
+SCP 3000 Anantashesha v2:        J-Kgmf4tQH8  (private - pending review)
+
+---
+
+## OPEN ISSUES
+
+- SCP-3000 v2 has no captions yet (Remotion pass not done)
+- Wrong v1 upload (NS5YcJu4bUI) needs deleting
+- Kling cost ~$5.60/video - clip reuse library needed before next build
+
+---
+
+## KEY DECISIONS THIS SESSION
+
+- SCP videos = acted scenes, NEVER narrated documentaries
+- Two-pass ffmpeg is the permanent assembly pattern
+- ElevenLabs semaphore = 2 in all future build scripts
+- Clip reuse library agreed - implement before next SCP video
+- build-scp3000-v2.cjs is the reference template for future SCP builds
+
+---
+
+## OTHER ACTIVE PROJECTS (context)
+
+- CTRLSignage: Cloudflare signage SaaS, steps 1+2 done, step 3 (portal auth) next
+- BedBouncer: website live at bedbouncer.co.uk, Kickstarter 2026
+- Mobile Games: BatonDrop in Google Play review; WordDrop + Cavernborn in planning
+- CTRLPro: hospitality SaaS, planning phase
+
+---
+
+## HOW TO START THE SYSTEM
+
+D:\AI Work\START-ALL.bat
+Or: npm run dev:backend + npm run dev:frontend in D:\AI Work\Control-Centre
