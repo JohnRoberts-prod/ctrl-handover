@@ -1,154 +1,221 @@
 # CTRL Project Handover
-*Last updated: 2026-06-25 UTC*
-*Session ended: Completing /afk after building CTRLSignage handover + next-chat paste text*
+*Last updated: 2026-06-27 UTC*
+*Session ended: switching active project to CTRLSignage after a long multi-project session (CTRLSignage operator module → Reframe AI SCP-597 video → CTRL LoRA module → Resolve MCP research).*
 
 ---
 
 ## HOW TO USE THIS DOCUMENT
 
-You are Claude Code (or Claude web) picking up a CTRL development session.
-John Roberts is the developer. Read this entire document before responding.
+You are Claude web browser picking up a CTRL development session. John Roberts is the developer.
+Read this entire document before responding. When John returns, he will paste in any files/context.
 
 The CTRL codebase is at: `D:\AI Work\Control-Centre\`
 Backend: Node.js + Express + TypeScript on port 3001
-Frontend: React 18 + Vite + TypeScript on port 5173 (port varies — check pm2 logs)
+Frontend: React 18 + Vite + TypeScript on port 5173
 Terminal server: node-pty WebSocket on port 3002
 Database: SQLite (better-sqlite3) at `D:\AI Work\.ctrl-data.db`
-CTRL runs on pm2 — NEVER use npm run dev manually. Use /restartctrl if CTRL is down.
 
 ---
 
 ## WHAT WE WERE BUILDING THIS SESSION
 
-Two workstreams:
-
-1. **Reframe AI — SCP-049 plague doctor video:** completed 5-clip Kling-only narrated video (Format B), fixed jump cuts with true last-frame extraction (`ffmpeg -sseof -0.1 -i clip.mp4 -vframes 1 frame.jpg`), mixed TTS + horror music, uploaded private to YouTube (ID: SFY6M_NDCqI).
-
-2. **CTRL — Meshy AI integration:** built full Meshy 3D model generation into the Design module. Backend service + routes + frontend panel all TypeScript-clean. Needs vault key `meshy_api_key` added before it will work.
-
-UE5 MCP was also wired up (unreal-mcp added to Claude settings.json pointing at localhost:8137) but UE5 was still installing at session end.
+A long session spanning four threads. (1) Finished the **CTRLSignage operator module** in CTRL.
+(2) Built and iterated a **Reframe AI SCP-597 horror short** pipeline — which John ultimately
+**rejected** for having no persistent character and no story. (3) That rejection drove building a
+**LoRA character module** into CTRL (fal.ai FLUX) to fix AI-video character consistency, and we
+**validated a turntable→dataset technique** that bootstraps a trained character from a single image.
+(4) Researched **DaVinci Resolve MCP** for proper editing/grading vs ffmpeg. John then said to
+switch the active project to CTRLSignage and run /afk.
 
 ---
 
 ## CURRENT BUILD STATE
 
-### Recently completed
+### Recently completed (this session)
+- **CTRLSignage operator module** (CTRL): `src/frontend/src/modules/signage/` (Signage.tsx 4 tabs +
+  components + signage.css `sig-` prefix); `src/backend/src/services/signage.service.ts` +
+  `routes/signage.routes.ts` proxying `https://api.ctrlsignage.co.uk/operator/*` with Bearer
+  `signage_operator_key`. `/api/signage` registered behind requireVaultUnlocked. tsc clean.
+- **CTRL LoRA module** (fal.ai FLUX) — full build, tsc clean:
+  - DB migration 51 → `lora_characters` table.
+  - `services/fal.service.ts` — fal queue REST (Authorization: Key), dependency-free store-only ZIP
+    writer, R2 hosting (reuses kling.service R2 path), `trainLora`/`pollTraining`/`generateWithLora`.
+  - `services/lora-bootstrap.service.ts` — "from one description": master (white bg) → Veo turntable
+    → ffmpeg 12 frames @1024 → trainLora; background job, status preparing→training→ready.
+  - `routes/lora.routes.ts` — `/api/lora` train, list, refresh, generate, bootstrap, delete (vault-guarded).
+  - `src/frontend/src/modules/characters/` — Characters tab (UserSquare, build group), "From a
+    description" + "Upload images" modes, generate panel.
+- **Backend fix**: `/api/video-pipeline/tts` now passes `modelId` through (enables `eleven_v3`
+  emotion tags `[whispered]`/`[trembling]`; default multilingual_v2 ignores them).
+- **Validated** turntable→LoRA dataset on an SCP creature (free test) — identity held through rotation.
 
-- **SCP-049 Plague Doctor video** — 25.3s, 5 Kling clips, ElevenLabs TTS narration, horror ambient music. YouTube private ID: SFY6M_NDCqI.
-- **Meshy backend** — `src/backend/src/services/meshy.service.ts` (text-to-3D, image-to-3D, poll, download) + `src/backend/src/routes/meshy.routes.ts`. Registered in server.ts.
-- **Meshy frontend** — `src/frontend/src/modules/design/MeshyPanel.tsx`, "Meshy 3D" tab in Design.tsx, CSS in design.css.
-- **skill-scp-video.md** — Format B (narrated Kling-only chain) fully documented.
-- **/restartctrl skill** — `C:\Users\admin\.claude\skills\restartctrl\SKILL.md` created and registered in CLAUDE.md.
-- **UE5 MCP config** — `unreal-mcp` added to `C:\Users\admin\.claude\settings.json` (port 8137).
+### In progress right now (PENDING USER ACTIONS — do these first next CTRL session)
+- **Set `fal_api_key` in the vault** (from fal.ai) — LoRA module needs it.
+- **`/restartctrl`** — loads migration 51, the new `/api/lora` + `/api/signage` routes, the tts fix,
+  and the rebuilt frontend (Characters + Signage tabs).
+- Then: open **Characters → From a description**, train the first character (an SCP creature or a
+  helmeted soldier).
 
-### In progress
+### Pending / next steps
+- **Rebuild SCP-597 story-first** around John's 7-beat scene (see KEY DECISIONS) using trained,
+  persistent LoRA soldiers + real dialogue. Lock script + storyboard in TEXT before generating.
+- **DaVinci Resolve MCP**: John to decide free (hiteshK03) vs Studio (lordhoell/samuelgursky),
+  confirm installed, then install + POC test (import clip → 2-clip timeline → grade → render).
+- **CTRLSignage**: set Stripe production secrets + create £2/screen price + register webhook.
 
-Nothing half-done in code. Meshy is complete but untested (needs vault key).
+---
 
-### Next steps (ordered)
+## ALL MODULES — STATUS
 
-1. Add vault key `meshy_api_key` in CTRL Settings tab (value from meshy.ai dashboard)
-2. UE5 setup: enable Python Editor Script Plugin + Editor Scripting Utilities, start MCP server on 8137, restart Claude Code
-3. CTRLSignage Steps 3+4 — portal auth (React app + Google OAuth) + media upload (R2 presigned PUT + Queue thumbnail). Full handover: `D:\AI Work\CTRLSignage\NEXT-SESSION-HANDOVER.md`
-4. SCP-3000 v3 — build script at `D:\AI Work\YouTube\reframe-ai\Videos\scp-3000-eel\v3\build-scp3000-v3.cjs` (upload step was failing with ECONNRESET)
+| Module | Location | Status | Notes |
+|--------|----------|--------|-------|
+| Home | modules/home/ | working | |
+| Claude Tab | modules/claude-tab/ | working | pty session persists across tabs |
+| Gmail/Google | modules/gmail/ | working | |
+| Tasks | modules/tasks/ | working | |
+| Finance | modules/finance/ | working | |
+| Trading | modules/trading/ | working | |
+| GitHub | modules/github/ | working | |
+| Cloudflare | modules/cloudflare/ | working | |
+| Brand Toolkit | modules/brand-toolkit/ | working | |
+| Design | modules/design/ | working | Nano photo/img2img, Ideogram edit, Kling video |
+| Video Pipeline | modules/video-pipeline/ | working | tts now supports modelId |
+| Signage | modules/signage/ | **NEW this session** | operator console; needs restart to appear |
+| Characters (LoRA) | modules/characters/ | **NEW this session** | needs fal_api_key + restart |
+| Settings / Admin | modules/settings,admin/ | working | |
 
 ---
 
 ## FILES CREATED OR MODIFIED THIS SESSION
 
 ```
-src/backend/src/services/meshy.service.ts       NEW — Meshy API service
-src/backend/src/routes/meshy.routes.ts          NEW — /api/meshy/* routes
-src/backend/src/server.ts                       MODIFIED — meshy router added
-src/frontend/src/modules/design/MeshyPanel.tsx  NEW — Meshy tab UI
-src/frontend/src/modules/design/Design.tsx      MODIFIED — Meshy 3D tab added
-src/frontend/src/modules/design/design.css      MODIFIED — meshy CSS classes
-SESSION_STATE.md                                UPDATED
-LEARNINGS.md                                    UPDATED (pm2, Meshy)
-D:\AI Work\YouTube\reframe-ai\skills\skill-scp-video.md   UPDATED — Format B added
-D:\AI Work\YouTube\reframe-ai\LEARNINGS.md               UPDATED
-D:\AI Work\roadtoctrl\knowledge\video-ideas.md            UPDATED — 2 new video ideas
-C:\Users\admin\.claude\skills\restartctrl\SKILL.md        NEW
-C:\Users\admin\.claude\CLAUDE.md                          MODIFIED — restartctrl registered
-C:\Users\admin\.claude\settings.json                      MODIFIED — unreal-mcp added
-D:\AI Work\CTRLSignage\NEXT-SESSION-HANDOVER.md           NEW — full CTRLSignage session handover
-D:\AI Work\NEXT-CHAT-CONTEXT.md                           NEW — paste-in text for new chat window
+# CTRL backend
+src/backend/src/db/migrate.ts — added migration 51 (lora_characters table)
+src/backend/src/services/fal.service.ts — NEW: fal.ai FLUX LoRA (train/generate, ZIP, R2)
+src/backend/src/services/lora-bootstrap.service.ts — NEW: description -> master -> turntable -> frames -> train
+src/backend/src/routes/lora.routes.ts — NEW: /api/lora/*
+src/backend/src/services/signage.service.ts — NEW: operator API proxy
+src/backend/src/routes/signage.routes.ts — NEW: /api/signage/*
+src/backend/src/routes/video-pipeline.routes.ts — /tts now passes modelId through
+src/backend/src/server.ts — registered /api/lora and /api/signage (vault-guarded)
+
+# CTRL frontend
+src/frontend/src/modules/characters/{Characters.tsx,index.ts,characters.css} — NEW
+src/frontend/src/services/lora.service.ts — NEW
+src/frontend/src/modules/signage/{Signage.tsx,index.ts,signage.css,components/*} — NEW
+src/frontend/src/services/signage.service.ts — NEW
+src/frontend/src/core/{nav.config.ts,shell.types.ts,AppShell.tsx} — registered signage + characters tabs
+
+# Reframe AI (separate project, D:\AI Work\YouTube\reframe-ai\)
+Videos/scp-597-mother/build-scp597.cjs — NEW: SCP video pipeline (stills-first, Veo, batched)
+Videos/lora-test/test-turntable.cjs — NEW: turntable dataset validation
+skills/{skill-scp-film.md,skill-ue-meshy-film.md,ue-meshy-poc-test.md} — filed from inbox
+CLAUDE.md, LEARNINGS.md — updated
+
+# CTRLSignage (D:\AI Work\CTRLSignage\) — earlier in session
+app/src/utils/stripe.ts, app/src/routes/billing.ts, app/src/routes/portal/billing.ts — NEW Stripe
+website/src/pages/billing/BillingPage.tsx + App.tsx + Sidebar.tsx — billing page
+website/src/pages/schedules/SchedulesPage.tsx — layout name fix
+SESSION_STATE.md — updated
+
+# Shared
+D:\AI Work\skills\skill-ai-video-cost-and-loras.md — NEW reusable skill
+D:\AI Work\roadtoctrl\knowledge\video-ideas.md — 3 new ideas prepended
 ```
+
+---
+
+## RECENT GIT COMMITS
+
+CTRL (`D:\AI Work\Control-Centre`) is not a git repo — no commit history. Changes live on disk only.
+Best-effort /afk repo backup pushed: batondrop. Other linked repos skipped (not git / no remote).
 
 ---
 
 ## OPEN ISSUES / KNOWN BUGS
 
-- Meshy tab needs `meshy_api_key` in vault before it will work
-- UE5 MCP not connected yet (UE5 still installing, plugins not enabled)
-- CTRL frontend port unstable — stray Vite processes may occupy 5173-5178. Use /restartctrl.
-- pm2 ctrl-backend had 93 restarts from earlier in session — seems stable now
-- SCP-3000 v3 upload step fails with ECONNRESET
-- SCP-049 mask colour inconsistency (white/black shifts) — Kling API has no character reference. Acceptable per John.
+- **eleven_v3 voices need a backend restart** — the /tts modelId passthrough is on disk but the
+  running backend won't honour it until restarted. If voices come out flat, that's why.
+- **Gemini img2img returns 1:1 with a thin white border** — always overscan-crop
+  (`crop=in_w*0.96:in_h*0.96,scale=1080:1920`) or white bars bake into the clip.
+- **Gemini text-to-image blocks aggressive flesh prompts** — use img2img EDIT of an approved image instead.
+- LoRA module untested live (needs fal_api_key + restart). Migration 51 applies on next start.
 
 ---
 
 ## KEY DECISIONS MADE THIS SESSION
 
-- **Meshy vault key name:** `meshy_api_key`
-- **CTRLSignage operator vault key:** `signage_operator_key`
-- **Gloomstomper uses AI video with character reference** on Kling website, NOT Unreal Engine
-- **Format B for humanoid SCPs:** 5-clip Kling-only chain, single narrator, hard cuts, no xfade
-- **True last-frame rule:** always `ffmpeg -sseof -0.1 -i clip.mp4 -vframes 1 frame.jpg`. Never mid-clip.
-- **CTRL runs on pm2:** never `npm run dev`. /restartctrl handles full clean restart.
-- **CTRLSignage domain:** ctrlsignage.co.uk (locked 2026-06-23)
+- **Cost discipline (AI video):** Kling/Pixazo = $0.70/clip cash; rerolls burned ~$25. RULE: approve
+  the cheap still BEFORE paying to animate. **Veo is the default animator** (free GCP credit until
+  ~23 Jul 2026); paid Kling only for flesh Veo's filter refuses.
+- **Character consistency via LoRA, not "hide the face":** train a FLUX LoRA per character. Bootstrap
+  the training set from ONE image via a **Veo turntable** (validated). Helmeted soldiers = best for
+  humans (kills face-drift AND lip-sync).
+- **SCP-597 rebuild brief (John's spec):** a tight 7-beat 2-soldier scene — Mother breaks containment
+  -> two soldiers frantic ("She's out, we have to stop her" / "What do we do?!") -> both firing round a
+  doorway -> one grabbed and dragged in by a tentacle -> the other screams his name -> beat, then runs
+  screaming -> the taken soldier walks back out, tentacle fused to him, whispers "...Mother." Persistent
+  characters + real dialogue + the morph as the scare. Lock script in text first.
+- **LoRA now vs UE5 later:** LoRA route for volume/speed/cost now; UE5+Meshy for premium long-form
+  later; they coexist (endgame hybrid = UE render -> AI stylization pass).
+- **Resolve MCP** for proper edit/grade/audio of hero videos; keep ffmpeg for fast automated volume.
 
 ---
 
 ## BACKEND API ENDPOINTS ADDED THIS SESSION
 
 ```
-POST /api/meshy/generate/text   — start text-to-3D (objectPrompt, stylePrompt, artStyle, targetFormats, enablePbr)
-POST /api/meshy/generate/image  — start image-to-3D (imageUrl, texturePrompt, targetFormats, enablePbr, poseMode)
-GET  /api/meshy/jobs/:jobId     — poll job (status, progress, modelUrls, localPaths, thumbnailUrl, error)
-All routes behind requireVaultUnlocked middleware.
+# LoRA (fal.ai) — all behind requireVaultUnlocked
+GET    /api/lora/characters                 list trained characters
+POST   /api/lora/characters                 train from uploaded images (multipart)
+POST   /api/lora/bootstrap                  train from a description (turntable pipeline)
+POST   /api/lora/characters/:id/refresh     poll fal training status
+POST   /api/lora/generate                   generate a still from a trained character
+DELETE /api/lora/characters/:id             delete
+
+# CTRLSignage operator (proxy to api.ctrlsignage.co.uk/operator/*) — vault-guarded
+GET  /api/signage/usage | /tenants | /tenants/:id | /devices | /waitlist
+POST /api/signage/tenants/:id/seats | /suspend | /reactivate | /devices/:id/deactivate
 ```
 
 ---
 
 ## DATABASE CHANGES THIS SESSION
 
-None — no migrations this session.
+- **Migration 51** (`src/backend/src/db/migrate.ts`): new table `lora_characters`
+  (id, name, trigger_word, status [preparing|training|ready|failed], request_id, lora_url,
+  thumb_url, error, created_at, updated_at). Applies automatically on next backend start.
 
 ---
 
 ## IMPORTANT CONTEXT FOR NEXT SESSION
 
-1. **Run /restartctrl** first if CTRL seems down
-2. **Before testing Meshy:** add `meshy_api_key` to vault in CTRL Settings
-3. **CTRLSignage session:** read `D:\AI Work\CTRLSignage\NEXT-SESSION-HANDOVER.md` first
-4. **New chat window paste-in:** contents of `D:\AI Work\NEXT-CHAT-CONTEXT.md`
-5. **Audio codec gotcha:** always `-c:a libmp3lame` for .mp3 output, never `-c:a aac`
-6. **Confirm before paid API calls** — Meshy, ElevenLabs, Veo, Kling all cost money
+- **DO FIRST:** set `fal_api_key` in vault, then `/restartctrl`. Nothing LoRA works until both are done.
+- The SCP-597 first cut (29.67s, in `G:\My Drive\SCP-597 Review\scp597-silent.mp4`) was **rejected** —
+  do not ship it. The rebuild is story-first around the 7-beat scene above, using trained characters.
+- Reusable assets worth keeping: the Mother creature sheet + the tentacle look, the hook frame, the
+  squad-charge and soldier-drag clips. The new characters (LoRA) replace the inconsistent humans.
+- The turntable bootstrap is the headline new capability — "describe a character, get a trained,
+  reusable identity." Test it first on an SCP creature (creatures hold best).
+- Skill files to read next video session: `D:\AI Work\skills\skill-ai-video-cost-and-loras.md`,
+  `reframe-ai/skills/skill-scp-film.md`, `reframe-ai/skills/skill-ue-meshy-film.md`.
 
 ---
 
 ## HOW TO START THE SYSTEM
 
-CTRL runs on pm2:
-```powershell
-# If pm2 is not running at all:
-cd "D:\AI Work\Control-Centre"
-& "C:\Users\admin\AppData\Roaming\npm\pm2.cmd" start ecosystem.config.js
-
-# For a clean restart:
-# Use /restartctrl skill in Claude Code
 ```
-
-Verify: http://localhost:3001/api/health
+D:\AI Work\START-ALL.bat
+```
+Or: backend `npm run dev:backend`, frontend `npm run dev:frontend`, terminal server in
+`src/terminal-server`. Use `/restartctrl` to restart cleanly (clears Vite cache).
 
 ---
 
-## PROJECTS OUTSIDE CTRL
+## PROJECTS OUTSIDE CTRL (for full context)
 
-- **CTRLSignage** — Cloudflare signage SaaS, Steps 1+2 done. Next: portal auth + media upload. `D:\AI Work\CTRLSignage\`
-- **Reframe AI** — SCP video pipeline (Format B). `D:\AI Work\YouTube\reframe-ai\`
-- **BedBouncer** — ESP32 alarm, Kickstarter prep. `D:\AI Work\BedBouncer\`
-- **CTRLPro** — Hospitality SaaS, planning phase. `D:\AI Work\CtrlPro\`
-- **BatonDrop** — Mobile game, v2.0.0 in Google Play review. `D:\AI Work\Mobile-Games\games\batondrop\`
-- **RoadToCtrl** — Solopreneur YouTube channel. `D:\AI Work\roadtoctrl\`
+- **CTRLSignage** — *now the active project.* API live at api.ctrlsignage.co.uk, Stripe billing built
+  (needs prod secrets), operator module in CTRL built. Player Android app = skeleton only.
+- **Reframe AI** — SCP-597 video rebuild pending (story-first, LoRA characters).
+- **BedBouncer** — ESP32 smart alarm, Kickstarter prep, needs product video.
+- **Mobile Games** — BatonDrop in production; others in build.
